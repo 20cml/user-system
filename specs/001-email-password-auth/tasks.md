@@ -48,10 +48,10 @@ description: "Task list for Email & Password Authentication"
 
 **Independent Test**: Submit the registration form with a new email/password and confirm an unverified account is created with a hashed password.
 
-- [ ] T007 [US1] Write feature tests for registration in `tests/Feature/Auth/RegistrationTest.php` — covers: new unverified account created with hashed password; registering with an already-**verified** email is rejected; registering with an already-**unverified** email resends verification instead of creating a duplicate (FR-002); weak password (<8 chars) is rejected
-- [ ] T008 [US1] Update `app/Http/Controllers/Auth/RegisteredUserController.php`: on a duplicate email, check verification status — resend the verification notification for unverified accounts instead of failing uniqueness validation (FR-002)
-- [ ] T009 [US1] Confirm registration validation rules (valid email format, minimum 8-character password) in `app/Http/Controllers/Auth/RegisteredUserController.php` (FR-002, FR-003)
-- [ ] T010 [P] [US1] Review `resources/views/auth/register.blade.php` against the spec's acceptance scenarios
+- [X] T007 [US1] Write feature tests for registration in `tests/Feature/Auth/RegistrationTest.php` — covers: new unverified account created with hashed password; registering with an already-**verified** email is rejected; registering with an already-**unverified** email resends verification instead of creating a duplicate (FR-002); weak password (<8 chars) is rejected
+- [X] T008 [US1] Update `app/Http/Controllers/Auth/RegisteredUserController.php`: on a duplicate email, check verification status — resend the verification notification for unverified accounts instead of failing uniqueness validation (FR-002)
+- [X] T009 [US1] Confirm registration validation rules (valid email format, minimum 8-character password) in `app/Http/Controllers/Auth/RegisteredUserController.php` (FR-002, FR-003)
+- [X] T010 [P] [US1] Review `resources/views/auth/register.blade.php` against the spec's acceptance scenarios
 
 **Checkpoint**: `php artisan test --filter=RegistrationTest` passes; User Story 1 is independently testable.
 
