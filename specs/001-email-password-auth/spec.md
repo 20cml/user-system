@@ -21,8 +21,9 @@ A new visitor creates an account by providing an email address and a password, s
 **Acceptance Scenarios**:
 
 1. **Given** no account exists for an email address, **When** the visitor submits that email with a valid password, **Then** a new account is created and the password is stored in hashed form (never as plain text).
-2. **Given** an account already exists for an email address, **When** a visitor tries to register with that same email, **Then** registration is rejected with a clear message that the email is already in use.
-3. **Given** a visitor submits a password that doesn't meet the minimum strength requirement, **When** they submit the registration form, **Then** registration is rejected with a clear explanation of the requirement.
+2. **Given** a **verified** account already exists for an email address, **When** a visitor tries to register with that same email, **Then** registration is rejected with a clear message that the email is already in use.
+3. **Given an unverified** account already exists for an email address (e.g., from a typo or an abandoned signup), **When** someone submits that same email to register again, **Then** the system resends a fresh verification link to that address instead of blocking the attempt — so the true owner of the email is never permanently locked out by a stale, unverified registration.
+4. **Given** a visitor submits a password that doesn't meet the minimum strength requirement, **When** they submit the registration form, **Then** registration is rejected with a clear explanation of the requirement.
 
 ---
 
@@ -68,13 +69,14 @@ A registered user enters their email and password to access their account.
 - What happens when a user's session expires while they're mid-action (e.g., submitting a form)?
 - What happens when someone clicks a verification link a second time, after already verifying?
 - What happens when someone requests a resend of the verification email repeatedly in a short period?
+- What happens when someone registers with an email address that doesn't actually exist (e.g., a typo in the domain)? See Assumptions — this is an accepted limitation, not something the system can self-correct.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: System MUST allow a visitor to create a new account by providing an email address and a password.
-- **FR-002**: System MUST validate that the submitted email is in a valid format and is not already registered to another account.
+- **FR-002**: System MUST validate that the submitted email is in a valid format and is not already registered to a **verified** account. If the email belongs to an existing but **unverified** account, the system MUST resend a fresh verification link to that address instead of blocking the registration attempt, so a stale unverified registration can never permanently lock out the email's true owner.
 - **FR-003**: System MUST enforce a minimum password strength (at least 8 characters) at registration.
 - **FR-004**: System MUST store passwords using a secure, one-way hash; passwords MUST NEVER be stored or logged in plain text.
 - **FR-005**: System MUST allow a registered user to log in by providing their email and password.
@@ -107,3 +109,4 @@ A registered user enters their email and password to access their account.
 - Google-based login is specified separately (a different feature); this feature covers only email/password.
 - Standard cookie-based web session behavior is assumed; no "remember me" long-lived token requirement was specified.
 - Actual email delivery time depends on the configured mail service and is outside this system's direct control.
+- If a user registers with an email address that is misspelled or otherwise undeliverable, they cannot self-recover through this feature (no delivery means no verification link ever arrives); this is an accepted limitation, not a scenario this feature attempts to detect or fix.
