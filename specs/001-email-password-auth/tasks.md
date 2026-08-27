@@ -35,8 +35,8 @@ description: "Task list for Email & Password Authentication"
 
 **⚠️ CRITICAL**: Must be complete before any user story work begins
 
-- [ ] T005 Run `php artisan migrate` against MySQL to create the `users` table (uses the existing `database/migrations/0001_01_01_000000_create_users_table.php` — no new migration needed per data-model.md)
-- [ ] T006 Make `app/Models/User.php` implement `MustVerifyEmail` so Laravel's email verification system (signed links, `Verified` event) is active
+- [X] T005 Run `php artisan migrate` against MySQL to create the `users` table (uses the existing `database/migrations/0001_01_01_000000_create_users_table.php` — no new migration needed per data-model.md)
+- [X] T006 Make `app/Models/User.php` implement `MustVerifyEmail` so Laravel's email verification system (signed links, `Verified` event) is active
 
 **Checkpoint**: Database and email-verification support ready — user stories can now be built.
 
