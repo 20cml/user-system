@@ -22,10 +22,10 @@ description: "Task list for Email & Password Authentication"
 
 **Purpose**: Get the project environment ready for this feature
 
-- [ ] T001 Install Laravel Breeze and scaffold Blade auth views (`composer require laravel/breeze --dev` then `php artisan breeze:install blade`)
-- [ ] T002 [P] Set up a local MySQL server and create the project database
-- [ ] T003 [P] Configure `.env`: `DB_CONNECTION=mysql` with matching credentials, and `MAIL_MAILER=log` for local development
-- [ ] T004 [P] Install and build frontend assets (`npm install && npm run build`)
+- [X] T001 Install Laravel Breeze and scaffold Blade auth views (`composer require laravel/breeze --dev` then `php artisan breeze:install blade`)
+- [X] T002 [P] Set up a local MySQL server and create the project database
+- [X] T003 [P] Configure `.env`: `DB_CONNECTION=mysql` with matching credentials, and `MAIL_MAILER=log` for local development
+- [X] T004 [P] Install and build frontend assets (`npm install && npm run build`)
 
 ---
 
