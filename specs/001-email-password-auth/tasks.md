@@ -79,10 +79,10 @@ description: "Task list for Email & Password Authentication"
 
 **Independent Test**: Log in with a verified account's correct credentials and confirm an authenticated session starts and persists across requests.
 
-- [ ] T016 [US3] Write feature tests for login in `tests/Feature/Auth/AuthenticationTest.php` — covers: verified user logs in successfully; wrong password rejected with a generic error; nonexistent email rejected with the same generic error (FR-006); repeated failed attempts get rate-limited (FR-008); session persists across requests
-- [ ] T017 [US3] Confirm `app/Http/Controllers/Auth/AuthenticatedSessionController.php` returns one generic error message for any failed login, never revealing which field was wrong (FR-006)
-- [ ] T018 [US3] Confirm Breeze's built-in login rate limiting is active in `AuthenticatedSessionController.php` (FR-008)
-- [ ] T019 [P] [US3] Review `resources/views/auth/login.blade.php` against the spec's acceptance scenarios
+- [X] T016 [US3] Write feature tests for login in `tests/Feature/Auth/AuthenticationTest.php` — covers: verified user logs in successfully; wrong password rejected with a generic error; nonexistent email rejected with the same generic error (FR-006); repeated failed attempts get rate-limited (FR-008); session persists across requests
+- [X] T017 [US3] Confirm `app/Http/Controllers/Auth/AuthenticatedSessionController.php` returns one generic error message for any failed login, never revealing which field was wrong (FR-006) — confirmed via `LoginRequest`, no change needed
+- [X] T018 [US3] Confirm Breeze's built-in login rate limiting is active in `AuthenticatedSessionController.php` (FR-008) — confirmed via `LoginRequest` (5 attempts, then throttled), no change needed
+- [X] T019 [P] [US3] Review `resources/views/auth/login.blade.php` against the spec's acceptance scenarios — already matches, no change needed
 
 **Checkpoint**: `php artisan test --filter=AuthenticationTest` passes; all three user stories work independently and together.
 
