@@ -90,9 +90,9 @@ description: "Task list for Email & Password Authentication"
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T020 [P] Run the full suite (`php artisan test --filter=Auth`) and fix any failures
-- [ ] T021 Walk through `quickstart.md`'s manual validation steps end-to-end in the browser
-- [ ] T022 [P] Re-read all touched files against the constitution's Simplicity and Explainable Code principles; simplify anything that isn't easy to explain
+- [X] T020 [P] Run the full suite (`php artisan test --filter=Auth`) and fix any failures — 30/30 passing
+- [X] T021 Walk through `quickstart.md`'s manual validation steps end-to-end in the browser — verified in a real browser: register → verify email link → dashboard; logout → login again without re-verification; duplicate registration correctly rejected
+- [X] T022 [P] Re-read all touched files against the constitution's Simplicity and Explainable Code principles; simplify anything that isn't easy to explain — reviewed, no changes needed
 
 ---
 
