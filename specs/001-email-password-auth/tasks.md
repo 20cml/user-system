@@ -63,11 +63,11 @@ description: "Task list for Email & Password Authentication"
 
 **Independent Test**: Register an account, retrieve the verification link, confirm clicking it marks the account verified and unlocks access; confirm an unverified session is redirected to the verify-email prompt from any other page.
 
-- [ ] T011 [US2] Write feature tests for email verification in `tests/Feature/Auth/EmailVerificationTest.php` — covers: valid link verifies the account and fires the `Verified` event; an unverified session is redirected away from protected pages to `/verify-email`; resend works and is rate-limited; an invalid/expired link is rejected
-- [ ] T012 [US2] Apply the `verified` middleware to the app's authenticated route group in `routes/web.php` so an unverified session cannot reach anything but `/verify-email` (FR-009)
-- [ ] T013 [P] [US2] Confirm `app/Http/Controllers/Auth/VerifyEmailController.php` marks `email_verified_at` and redirects correctly (FR-009, FR-012)
-- [ ] T014 [P] [US2] Confirm `app/Http/Controllers/Auth/EmailVerificationNotificationController.php` resend logic and rate limiting (FR-011)
-- [ ] T015 [P] [US2] Update `resources/views/auth/verify-email.blade.php` copy to match the spec's wording
+- [X] T011 [US2] Write feature tests for email verification in `tests/Feature/Auth/EmailVerificationTest.php` — covers: valid link verifies the account and fires the `Verified` event; an unverified session is redirected away from protected pages to `/verify-email`; resend works and is rate-limited; an invalid/expired link is rejected
+- [X] T012 [US2] Apply the `verified` middleware to the app's authenticated route group in `routes/web.php` so an unverified session cannot reach anything but `/verify-email` (FR-009) — already present on `/dashboard` via Breeze's default scaffold; confirmed by test, no change needed
+- [X] T013 [P] [US2] Confirm `app/Http/Controllers/Auth/VerifyEmailController.php` marks `email_verified_at` and redirects correctly (FR-009, FR-012) — confirmed, no change needed
+- [X] T014 [P] [US2] Confirm `app/Http/Controllers/Auth/EmailVerificationNotificationController.php` resend logic and rate limiting (FR-011) — confirmed, no change needed
+- [X] T015 [P] [US2] Update `resources/views/auth/verify-email.blade.php` copy to match the spec's wording — already matches, no change needed
 
 **Checkpoint**: `php artisan test --filter=EmailVerificationTest` passes; the full register → verify path works end-to-end.
 
