@@ -80,9 +80,9 @@ description: "Task list for Google Login"
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T014 [P] Run the full suite (`php artisan test --filter=Auth`) and fix any failures
-- [ ] T015 Walk through `quickstart.md`'s manual validation steps with a real Google account in the browser
-- [ ] T016 [P] Re-read all touched files against the constitution's Simplicity and Explainable Code principles
+- [X] T014 [P] Run the full suite (`php artisan test --filter=Auth`) and fix any failures — 36/36 passing
+- [X] T015 Walk through `quickstart.md`'s manual validation steps with a real Google account in the browser — verified in a real browser with a real Google account
+- [X] T016 [P] Re-read all touched files against the constitution's Simplicity and Explainable Code principles — reviewed, no changes needed
 
 ---
 
