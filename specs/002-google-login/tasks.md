@@ -30,9 +30,9 @@ description: "Task list for Google Login"
 
 **⚠️ CRITICAL**: Must be complete before any user story work begins
 
-- [ ] T004 Create a migration adding a nullable, unique `google_id` column to `users` and making the existing `password` column nullable (per data-model.md / research.md)
-- [ ] T005 Run `php artisan migrate`
-- [ ] T006 Add `google_id` to `app/Models/User.php`'s fillable attributes
+- [X] T004 Create a migration adding a nullable, unique `google_id` column to `users` and making the existing `password` column nullable (per data-model.md / research.md)
+- [X] T005 Run `php artisan migrate`
+- [X] T006 Add `google_id` to `app/Models/User.php`'s fillable attributes
 
 **Checkpoint**: Schema and dependencies ready — user stories can now be built.
 
