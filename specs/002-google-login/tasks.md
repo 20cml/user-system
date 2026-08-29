@@ -60,7 +60,7 @@ description: "Task list for Google Login"
 
 **Independent Test**: Complete the (mocked) Google consent flow twice with the same Google identity; confirm both times resolve to the same user id.
 
-- [ ] T012 [US2] Add feature tests in `GoogleAuthenticationTest.php` confirming a second sign-in with the same Google identity (matching `google_id`) logs into the same existing account rather than creating a duplicate (FR-004) — exercises the `callback()` logic already built in T009, no new implementation
+- [X] T012 [US2] Add feature tests in `GoogleAuthenticationTest.php` confirming a second sign-in with the same Google identity (matching `google_id`) logs into the same existing account rather than creating a duplicate (FR-004) — exercises the `callback()` logic already built in T009, no new implementation
 
 **Checkpoint**: Repeat Google sign-ins verified to land on one account.
 
@@ -72,7 +72,7 @@ description: "Task list for Google Login"
 
 **Independent Test**: Register via `/register`, then complete the (mocked) Google consent flow with the same email; confirm the result is the same user id, now verified and `google_id`-linked.
 
-- [ ] T013 [US3] Add feature tests in `GoogleAuthenticationTest.php` confirming Google sign-in with an email matching an existing (verified or unverified) email/password account links `google_id` onto that account and marks it verified (FR-005) — exercises the `callback()` logic already built in T009, no new implementation
+- [X] T013 [US3] Add feature tests in `GoogleAuthenticationTest.php` confirming Google sign-in with an email matching an existing (verified or unverified) email/password account links `google_id` onto that account and marks it verified (FR-005) — exercises the `callback()` logic already built in T009, no new implementation
 
 **Checkpoint**: All three user stories independently functional and testable together.
 
