@@ -44,11 +44,11 @@ description: "Task list for Google Login"
 
 **Independent Test**: Complete the Google consent flow (mocked in tests) with an email not already in the system; confirm a new, verified account is created and the visitor is logged in.
 
-- [ ] T007 [US1] Write feature tests in `tests/Feature/Auth/GoogleAuthenticationTest.php` — covers: a mocked new Google identity creates a verified account and logs the visitor in; a cancelled/denied consent creates no account and returns to `/login` with an error
-- [ ] T008 [US1] Create `app/Http/Controllers/Auth/GoogleAuthController.php` with a `redirect()` method sending the visitor to Google's consent screen
-- [ ] T009 [US1] Implement `callback()` on `GoogleAuthController.php`: resolve the account (create new-and-verified, or link/return an existing one by email/google_id — full logic per data-model.md, exercised further by US2/US3 below), start the session, handle a cancelled/denied consent gracefully (FR-001 through FR-007)
-- [ ] T010 [US1] Add `GET /auth/google/redirect` and `GET /auth/google/callback` routes (guest-only group) to `routes/auth.php`
-- [ ] T011 [P] [US1] Add a "Continue with Google" button/link to `resources/views/auth/login.blade.php` and `resources/views/auth/register.blade.php`
+- [X] T007 [US1] Write feature tests in `tests/Feature/Auth/GoogleAuthenticationTest.php` — covers: a mocked new Google identity creates a verified account and logs the visitor in; a cancelled/denied consent creates no account and returns to `/login` with an error
+- [X] T008 [US1] Create `app/Http/Controllers/Auth/GoogleAuthController.php` with a `redirect()` method sending the visitor to Google's consent screen
+- [X] T009 [US1] Implement `callback()` on `GoogleAuthController.php`: resolve the account (create new-and-verified, or link/return an existing one by email/google_id — full logic per data-model.md, exercised further by US2/US3 below), start the session, handle a cancelled/denied consent gracefully (FR-001 through FR-007)
+- [X] T010 [US1] Add `GET /auth/google/redirect` and `GET /auth/google/callback` routes (guest-only group) to `routes/auth.php`
+- [X] T011 [P] [US1] Add a "Continue with Google" button/link to `resources/views/auth/login.blade.php` and `resources/views/auth/register.blade.php`
 
 **Checkpoint**: `php artisan test --filter=GoogleAuthenticationTest` passes for new-account creation; User Story 1 is independently testable.
 
