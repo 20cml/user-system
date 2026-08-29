@@ -20,9 +20,9 @@ description: "Task list for Google Login"
 
 ## Phase 1: Setup
 
-- [ ] T001 Install Laravel Socialite (`composer require laravel/socialite`)
-- [ ] T002 [P] Create a Google Cloud OAuth 2.0 Client ID and add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` to `.env`
-- [ ] T003 [P] Add a `google` credentials block (reading those `.env` values) to `config/services.php`
+- [X] T001 Install Laravel Socialite (`composer require laravel/socialite`)
+- [X] T002 [P] Create a Google Cloud OAuth 2.0 Client ID and add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` to `.env`
+- [X] T003 [P] Add a `google` credentials block (reading those `.env` values) to `config/services.php`
 
 ---
 
