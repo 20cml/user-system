@@ -22,7 +22,7 @@ class RegistrationTest extends TestCase
     public function test_new_users_can_register(): void
     {
         $response = $this->post('/register', [
-            'name' => 'Test User',
+            'first_name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -35,7 +35,7 @@ class RegistrationTest extends TestCase
     public function test_new_users_are_created_unverified_with_a_hashed_password(): void
     {
         $this->post('/register', [
-            'name' => 'Test User',
+            'first_name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -56,7 +56,7 @@ class RegistrationTest extends TestCase
         ]);
 
         $response = $this->post('/register', [
-            'name' => 'Test User',
+            'first_name' => 'Test User',
             'email' => 'taken@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -75,7 +75,7 @@ class RegistrationTest extends TestCase
         ]);
 
         $response = $this->post('/register', [
-            'name' => 'Someone Else',
+            'first_name' => 'Someone Else',
             'email' => 'pending@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -90,7 +90,7 @@ class RegistrationTest extends TestCase
     public function test_registration_rejects_a_password_shorter_than_eight_characters(): void
     {
         $response = $this->post('/register', [
-            'name' => 'Test User',
+            'first_name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'short1',
             'password_confirmation' => 'short1',
