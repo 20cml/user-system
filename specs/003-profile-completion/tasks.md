@@ -105,7 +105,7 @@ description: "Task list for Mandatory Profile Completion"
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 - [X] T019 [P] Run the full suite (`php artisan test --filter=Profile`) and fix any failures — 12/12 passing; also ran the whole project suite (54/54 passing) since this feature touches shared infrastructure (`UserFactory`, `/dashboard`'s middleware); found and fixed a real regression in the pre-existing `tests/Feature/ProfileTest.php` (Breeze's default test), which submitted only `name`/`email` and now needed the new required fields too
-- [ ] T020 Walk through `quickstart.md`'s manual validation steps end-to-end in the browser, for both email/password and Google first-time sign-ins — **pending: manual browser walkthrough, and also blocked on T001's real API key for step 3's autocomplete check**
+- [X] T020 Walk through `quickstart.md`'s manual validation steps end-to-end in the browser, for both email/password and Google first-time sign-ins — verified both paths: register/verify or Google sign-in redirects to the profile page while incomplete, address autocomplete works with the real Geoapify key, and the dashboard unlocks once the profile is saved
 - [X] T021 [P] Re-read all touched files against the constitution's Simplicity and Explainable Code principles; simplify anything that isn't easy to explain — reviewed, no changes needed
 
 ---
