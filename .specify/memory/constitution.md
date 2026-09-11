@@ -1,5 +1,17 @@
 <!--
 Sync Impact Report
+Version change: 1.0.0 → 1.1.0
+Modified principles:
+  - IV. Test Coverage for Core Flows — generalized from a named list of auth-specific flows
+    (registration, login, logout, view/update profile) to any user-facing flow introduced by
+    any feature, so the principle doesn't need editing every time a new feature ships.
+Added sections: N/A
+Removed sections: N/A
+Deferred TODOs: none
+-->
+
+<!--
+Sync Impact Report
 Version change: (none) → 1.0.0
 Modified principles: N/A (initial ratification)
 Added sections:
@@ -42,9 +54,10 @@ feature was specified, planned, implemented, and tested — this is not optional
 process overhead, it is a deliverable.
 
 ### IV. Test Coverage for Core Flows
-Registration (email/password and Google), login (both methods), logout, viewing
-profile, and updating profile MUST each have automated tests covering their
-primary path before being considered done.
+Each user-facing flow introduced by any feature MUST have automated tests covering
+its primary path before being considered done — this includes, but is not limited
+to, registration (email/password and Google), login (both methods), logout,
+viewing profile, and updating profile.
 Rationale: Automated tests provide objective proof the system works, rather than
 relying on manual spot-checks.
 
@@ -84,4 +97,4 @@ wording fixes), and updating the Last Amended date. Any deviation from a
 principle during implementation must be justified in the relevant spec or plan
 document.
 
-**Version**: 1.0.0 | **Ratified**: 2026-08-25 | **Last Amended**: 2026-08-25
+**Version**: 1.1.0 | **Ratified**: 2026-08-25 | **Last Amended**: 2026-09-10
