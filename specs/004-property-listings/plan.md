@@ -9,15 +9,18 @@
 Agents need a place to track the properties they have available to sell or rent. This feature adds
 a `Listing` model owned by the agent who creates it, a set of Blade pages to create/view/edit
 listings, and a status field (`available`/`pending`/`closed`) the agent updates as a deal
-progresses. Access is scoped so an agent only ever sees and edits their own listings.
+progresses. Access is scoped so an agent only ever sees and edits their own listings. Listings may
+also carry up to 3 photos (a `ListingPhoto` model, stored via Laravel's local filesystem) and reuse
+the existing address-autocomplete endpoint from the profile page. The list itself can be optionally
+filtered by status, listing type, property type, and/or price range.
 
 ## Technical Context
 
 **Language/Version**: PHP 8.3+, Laravel 13
 
-**Primary Dependencies**: Laravel (Eloquent, Blade, validation, routing, policies), Tailwind CSS, Alpine.js — all already installed, no new dependency required
+**Primary Dependencies**: Laravel (Eloquent, Blade, validation, routing, policies, `Storage` facade for file uploads), Tailwind CSS, Alpine.js — all already installed, no new dependency required
 
-**Storage**: MySQL (new `listings` table)
+**Storage**: MySQL (new `listings` and `listing_photos` tables); uploaded photo files on the local filesystem via `Storage::disk('public')`
 
 **Testing**: PHPUnit, Laravel's `RefreshDatabase` Feature tests (same approach as Features 1–3)
 
@@ -29,7 +32,7 @@ progresses. Access is scoped so an agent only ever sees and edits their own list
 
 **Constraints**: None beyond the existing stack — no new services, queues, or external APIs
 
-**Scale/Scope**: One new entity (`Listing`), one controller, one policy, a handful of Blade views; matches spec's SC-004 (an agent managing ~200 listings without noticeable slowdown, well within a simple indexed query)
+**Scale/Scope**: Two new entities (`Listing`, `ListingPhoto`), one controller, one policy, a handful of Blade views; matches spec's SC-004 (an agent managing ~200 listings without noticeable slowdown, well within a simple indexed query)
 
 ## Constitution Check
 
@@ -37,11 +40,11 @@ progresses. Access is scoped so an agent only ever sees and edits their own list
 
 | Principle | Check |
 |---|---|
-| I. Simplicity & Convention over Configuration | Uses a standard Eloquent model, a resource-style controller, and Blade views — no new abstraction layer. Authorization uses a Laravel Policy (`ListingPolicy`), the framework's built-in mechanism for "can this user act on this record" checks. |
+| I. Simplicity & Convention over Configuration | Uses standard Eloquent models, a resource-style controller, and Blade views — no new abstraction layer. Authorization uses a Laravel Policy (`ListingPolicy`), and photo uploads use Laravel's built-in `Storage` facade — no new package or third-party service for either. |
 | II. Security by Default | All listing routes require `auth` (and `verified`/`profile.complete`, matching `/dashboard`'s existing gate). All fields are validated server-side via a Form Request. Ownership is enforced by `ListingPolicy`, not by client-side hiding — an agent cannot reach another agent's listing even by guessing its URL. |
 | III. Spec-Driven Development | This plan follows `spec.md`, produced by `/speckit-specify`; `/speckit-tasks` and `/speckit-implement` come next. |
 | IV. Test Coverage for Core Flows | Applies to this feature's core flows — create, edit, change status, and the ownership boundary — each covered by an automated test. |
-| V. Explainable Code | Plain CRUD: one model, one controller, one policy, one Form Request. Nothing here needs a comment to justify its existence. |
+| V. Explainable Code | Plain CRUD plus file uploads: two models, one controller, one policy, one Form Request. Nothing here needs a comment to justify its existence. |
 
 No unjustified violations — Complexity Tracking table not needed.
 
@@ -68,30 +71,32 @@ specs/004-property-listings/
 ```text
 app/
 ├── Models/
-│   └── Listing.php                          # new
+│   ├── Listing.php                          # new
+│   └── ListingPhoto.php                     # new
 ├── Http/
 │   ├── Controllers/
-│   │   └── ListingController.php            # new — index, create, store, edit, update
+│   │   └── ListingController.php            # new — index, create, store, edit, update (photos handled within store/update)
 │   └── Requests/
-│       └── ListingRequest.php                # new — validates create/update input
+│       └── ListingRequest.php                # new — validates create/update input, including photos
 ├── Policies/
 │   └── ListingPolicy.php                     # new — ownership check (view/update only own listings)
 
 database/
 ├── migrations/
-│   └── ..._create_listings_table.php         # new
+│   ├── ..._create_listings_table.php         # new
+│   └── ..._create_listing_photos_table.php   # new
 └── factories/
     └── ListingFactory.php                    # new
 
 resources/views/listings/
-├── index.blade.php                           # new — agent's own listings
-├── create.blade.php                          # new
-└── edit.blade.php                            # new — also serves as the detail view
+├── index.blade.php                           # new — agent's own listings, with a thumbnail per listing
+├── create.blade.php                          # new — includes address autocomplete + photo upload
+└── edit.blade.php                            # new — also serves as the detail view; photo remove/reorder
 
 routes/web.php                                # add listings routes (auth + verified + profile.complete)
 
 tests/Feature/
-└── ListingTest.php                           # new — create, edit, status change, ownership boundary
+└── ListingTest.php                           # new — create, edit, status change, ownership boundary, photos
 ```
 
 **Structure Decision**: This is a single existing Laravel monolith (not a frontend/backend split) — the

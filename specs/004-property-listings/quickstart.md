@@ -28,19 +28,37 @@ editing, status changes, and the ownership boundary.
 
 1. Log in as Agent A (an existing, fully onboarded account) and go to `/listings`.
    - **Expected**: empty list (or only listings Agent A already created).
-2. Go to `/listings/create` and submit a new listing with an address, a price, a type (sale or
-   rent), bedrooms, bathrooms, size, and a description.
-   - **Expected**: redirected to `/listings`, the new listing appears with status `available`.
-3. Try submitting the create form again, this time leaving the address blank.
+2. Go to `/listings/create`. Type a real postal/zip code in the address field.
+   - **Expected**: a matching suggestion appears (same behavior as the profile page), and selecting
+     it fills the rest of the address.
+3. Submit a new listing with an address (using the autocomplete suggestion, which fills in
+   country too), a price, a listing type (sale or rent), a property type, size, and a description —
+   attach 1 to 3 photos.
+   - **Expected**: redirected to `/listings`; the new listing appears with status `available`, its
+     own country reflecting the address entered, and its `currency` matching Agent A's own profile
+     country (CAD for CA, USD for US) — not necessarily the listing's own country.
+4. Try submitting the create form again, this time leaving the address blank.
    - **Expected**: validation error naming the missing field; nothing is created.
-4. Try submitting a listing with a price of `0` or a negative number.
+5. Try submitting a listing with a price of `0` or a negative number.
    - **Expected**: validation error; nothing is created.
-5. Open the listing created in step 2 for editing and change its status to `pending`, then save.
+6. Try attaching a 4th photo to a listing.
+   - **Expected**: validation error; the submission is rejected.
+7. Open the listing created in step 3 for editing and change its status to `pending`, then save.
    - **Expected**: redirected to `/listings`, the listing now shows status `pending`.
-6. Change the same listing's status to `closed`, then save.
+8. Change the same listing's status to `closed`, then save.
    - **Expected**: the listing shows status `closed` and still appears in the list (not removed).
-7. Log out, then log in as Agent B (a different account) and go to `/listings`.
-   - **Expected**: Agent B's list does not include any of Agent A's listings.
-8. While logged in as Agent B, try visiting `/listings/{id}/edit` using the ID of a listing created
-   by Agent A in step 2.
-   - **Expected**: access denied (403), not the edit form.
+9. On the same listing, mark one photo for removal and change the display order of the remaining
+   ones, then save.
+   - **Expected**: the removed photo is gone; the rest display in the new order.
+10. Log out, then log in as Agent B (a different account) and go to `/listings`.
+    - **Expected**: Agent B's list does not include any of Agent A's listings.
+11. While logged in as Agent B, try visiting `/listings/{id}/edit` using the ID of a listing created
+    by Agent A in step 3.
+    - **Expected**: access denied (403), not the edit form.
+12. Back as Agent A (with at least two listings of different statuses/prices), apply a status
+    filter on `/listings`.
+    - **Expected**: only listings matching that status are shown.
+13. Add a second filter (e.g., a maximum price) on top of the first.
+    - **Expected**: only listings matching both filters are shown.
+14. Clear all filters.
+    - **Expected**: the full list of Agent A's listings is shown again.
