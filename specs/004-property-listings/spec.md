@@ -38,6 +38,7 @@ As a deal progresses, an agent updates a listing's status — from available, to
 
 1. **Given** an agent has an existing listing marked "available", **When** they change its status to "pending", **Then** the listing reflects "pending" everywhere it's shown.
 2. **Given** an agent has a listing marked "pending", **When** they change its status to "closed", **Then** the listing reflects "closed" and remains visible in their list (not deleted).
+3. **Given** an agent wants a listing gone entirely rather than marked "closed" (e.g., it was added by mistake), **When** they delete it and confirm, **Then** the listing is permanently removed from their list.
 
 ---
 
@@ -52,22 +53,21 @@ An agent only ever sees and can edit the property listings they personally added
 **Acceptance Scenarios**:
 
 1. **Given** two agents each have their own listings, **When** either agent views their list of properties, **Then** they only see the listings they personally added.
-2. **Given** an agent knows a listing exists that belongs to another agent, **When** they attempt to view or edit it directly, **Then** access is denied.
+2. **Given** an agent knows a listing exists that belongs to another agent, **When** they attempt to view, edit, or delete it directly, **Then** access is denied.
 
-### User Story 4 - Attach photos to a listing (Priority: P2)
+### User Story 4 - Attach a photo to a listing (Priority: P2)
 
-An agent attaches up to 3 photos to a listing — while creating it or afterward — and can remove or reorder them later.
+An agent attaches a single photo to a listing — while creating it or afterward — and can replace or remove it later.
 
-**Why this priority**: Photos make a listing far more useful to look at, but the listing is already functional (trackable, editable) without them, so this builds on User Story 1 rather than blocking it.
+**Why this priority**: A photo makes a listing far more useful to look at, but the listing is already functional (trackable, editable) without one, so this builds on User Story 1 rather than blocking it.
 
-**Independent Test**: Can be fully tested by uploading photos to a listing, confirming they display in order, then removing one and changing the order of the rest, and confirming both changes are reflected.
+**Independent Test**: Can be fully tested by uploading a photo to a listing, confirming it displays, then replacing it with a different one and removing it, confirming each change is reflected.
 
 **Acceptance Scenarios**:
 
-1. **Given** an agent is creating or editing a listing, **When** they upload 1 to 3 photos, **Then** the photos are saved and shown with the listing.
-2. **Given** a listing already has 3 photos, **When** the agent tries to add another, **Then** the submission is rejected.
-3. **Given** a listing has existing photos, **When** the agent marks one for removal and saves, **Then** that photo is deleted and no longer shown.
-4. **Given** a listing has more than one photo, **When** the agent changes their display order and saves, **Then** they appear in the new order afterward.
+1. **Given** an agent is creating or editing a listing, **When** they upload a photo, **Then** the photo is saved and shown with the listing.
+2. **Given** a listing already has a photo, **When** the agent uploads a new one, **Then** the new photo replaces the old one.
+3. **Given** a listing has a photo, **When** the agent removes it and saves, **Then** the photo is deleted and no longer shown.
 
 ### User Story 5 - Filter the list of listings (Priority: P3)
 
@@ -106,13 +106,13 @@ filters and confirming the full list returns.
 - **FR-005**: Agents MUST be able to view the list of property listings they have created.
 - **FR-006**: Agents MUST be able to edit the details of a listing they created.
 - **FR-007**: Agents MUST be able to change a listing's status among "available", "pending", and "closed".
-- **FR-008**: System MUST prevent an agent from viewing or editing a listing created by a different agent.
+- **FR-008**: System MUST prevent an agent from viewing, editing, or deleting a listing created by a different agent.
 - **FR-009**: System MUST keep a listing's history (i.e., closed listings remain visible, not deleted) once its status changes to "closed".
+- **FR-019**: Agents MUST be able to permanently delete one of their own listings, as a distinct action from marking it "closed".
 - **FR-010**: System MUST determine the currency shown for a listing's price from the agent's own profile country (CAD for a Canada-based agent, USD for a U.S.-based agent) rather than accepting a separately entered currency.
-- **FR-011**: Agents MUST be able to attach up to 3 photos to a listing.
-- **FR-012**: System MUST reject an attempt to attach more than 3 photos to a single listing.
+- **FR-011**: Agents MUST be able to attach a single photo to a listing.
+- **FR-012**: System MUST replace a listing's existing photo when the agent uploads a new one, rather than keeping both.
 - **FR-013**: Agents MUST be able to remove a photo from one of their listings.
-- **FR-014**: Agents MUST be able to change the display order of a listing's photos.
 - **FR-015**: System MUST assist the agent's entry of a listing's address — including its country — with the same autocomplete suggestion used on the existing profile page.
 - **FR-016**: System MUST list an agent's listings ordered from most recently added to least recently added, showing the date each was added.
 - **FR-017**: Agents MUST be able to filter their list of listings by status, listing type, property type, and/or a minimum and/or maximum price, in any combination.
@@ -120,8 +120,7 @@ filters and confirming the full list returns.
 
 ### Key Entities
 
-- **Listing**: A property an agent has available to sell or rent. Attributes: address (including its own country), price, currency (derived from the agent's own profile country), listing type (sale or rent), property type (house, apartment, land, or commercial), status (available, pending, or closed), size, and description. Belongs to exactly one agent; may have up to 3 photos.
-- **Listing Photo**: An image attached to a listing, with a display position. Belongs to exactly one listing.
+- **Listing**: A property an agent has available to sell or rent. Attributes: address (including its own country), price, currency (derived from the agent's own profile country), listing type (sale or rent), property type (house, apartment, land, or commercial), status (available, pending, or closed), size, description, and an optional photo. Belongs to exactly one agent.
 
 ## Success Criteria _(mandatory)_
 
@@ -135,6 +134,9 @@ filters and confirming the full list returns.
 ## Assumptions
 
 - Only the individual agent who creates a listing manages it — there is no team or brokerage-level sharing of listings in this version.
+- "Closed" and "deleted" are two different things: closing a listing keeps it as a historical
+  record (FR-009); deleting it removes it entirely (FR-019). Deletion asks for confirmation first,
+  since it can't be undone.
 - Property size is recorded in square meters.
 - A listing's own country reflects where the *property* actually is (entered as part of its
   address, assisted by autocomplete) and can differ from the agent's own profile country — a
@@ -143,5 +145,6 @@ filters and confirming the full list returns.
   agent conducts business rather than the specific property's location.
 - Listings are added manually by the agent; importing listings from other sources or pulling them from an external API is out of scope for this version.
 - Address entry is assisted by the same autocomplete suggestion used on the existing profile page.
-- Photos are stored on the server's own file storage; no third-party image hosting is used in this version.
-- Uploaded photos are stored as-is — no resizing, cropping, or compression is performed in this version.
+- A listing may have at most one photo; attaching a new one replaces whatever photo was there before, rather than keeping a gallery.
+- The photo is stored on the server's own file storage; no third-party image hosting is used in this version.
+- An uploaded photo is stored as-is — no resizing, cropping, or compression is performed in this version.

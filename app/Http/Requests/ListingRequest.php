@@ -2,12 +2,11 @@
 
 namespace App\Http\Requests;
 
-use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class ProfileUpdateRequest extends FormRequest
+class ListingRequest extends FormRequest
 {
     /**
      * Get the validation rules that apply to the request.
@@ -17,23 +16,19 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'email' => [
-                'required',
-                'string',
-                'lowercase',
-                'email',
-                'max:255',
-                Rule::unique(User::class)->ignore($this->user()->id),
-            ],
-            'phone' => ['required', 'string', 'max:20'],
             'address_line' => ['required', 'string', 'max:255'],
-            'address_complement' => ['nullable', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:255'],
             'state_province' => ['required', 'string', 'max:255'],
             'postal_code' => ['required', 'string', 'max:20'],
             'country' => ['required', Rule::in(['CA', 'US'])],
+            'price' => ['required', 'numeric', 'gt:0'],
+            'listing_type' => ['required', Rule::in(['sale', 'rent'])],
+            'property_type' => ['required', Rule::in(['house', 'apartment', 'land', 'commercial'])],
+            'status' => ['sometimes', Rule::in(['available', 'pending', 'closed'])],
+            'area_sqm' => ['nullable', 'numeric'],
+            'description' => ['nullable', 'string'],
+            'photo' => ['nullable', 'image', 'max:5120'],
+            'remove_photo' => ['nullable', 'boolean'],
         ];
     }
 }

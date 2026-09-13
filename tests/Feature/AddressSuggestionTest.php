@@ -38,7 +38,7 @@ class AddressSuggestionTest extends TestCase
             [
                 'street' => '123 Main St',
                 'city' => 'Toronto',
-                'region' => 'ON',
+                'state_province' => 'ON',
                 'postal_code' => 'M5V 2T6',
                 'country' => 'CA',
             ],

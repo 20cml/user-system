@@ -7,12 +7,13 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
     'first_name', 'email', 'password', 'google_id',
-    'phone', 'address_line', 'address_complement', 'city', 'region', 'postal_code', 'country', 'last_name',
+    'phone', 'address_line', 'address_complement', 'city', 'state_province', 'postal_code', 'country', 'last_name',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
@@ -32,5 +33,10 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'profile_completed_at' => 'datetime',
         ];
+    }
+
+    public function listings(): HasMany
+    {
+        return $this->hasMany(Listing::class);
     }
 }

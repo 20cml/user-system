@@ -33,23 +33,23 @@ editing, status changes, and the ownership boundary.
      it fills the rest of the address.
 3. Submit a new listing with an address (using the autocomplete suggestion, which fills in
    country too), a price, a listing type (sale or rent), a property type, size, and a description —
-   attach 1 to 3 photos.
+   attach one photo.
    - **Expected**: redirected to `/listings`; the new listing appears with status `available`, its
-     own country reflecting the address entered, and its `currency` matching Agent A's own profile
-     country (CAD for CA, USD for US) — not necessarily the listing's own country.
+     own country reflecting the address entered, its `currency` matching Agent A's own profile
+     country (CAD for CA, USD for US) — not necessarily the listing's own country — and its photo
+     visible as a thumbnail.
 4. Try submitting the create form again, this time leaving the address blank.
    - **Expected**: validation error naming the missing field; nothing is created.
 5. Try submitting a listing with a price of `0` or a negative number.
    - **Expected**: validation error; nothing is created.
-6. Try attaching a 4th photo to a listing.
-   - **Expected**: validation error; the submission is rejected.
-7. Open the listing created in step 3 for editing and change its status to `pending`, then save.
+6. Open the listing created in step 3 for editing and change its status to `pending`, then save.
    - **Expected**: redirected to `/listings`, the listing now shows status `pending`.
-8. Change the same listing's status to `closed`, then save.
+7. Change the same listing's status to `closed`, then save.
    - **Expected**: the listing shows status `closed` and still appears in the list (not removed).
-9. On the same listing, mark one photo for removal and change the display order of the remaining
-   ones, then save.
-   - **Expected**: the removed photo is gone; the rest display in the new order.
+8. On the same listing, upload a different photo, then save.
+   - **Expected**: the new photo replaces the old one.
+9. Click the "×" on the photo and save.
+   - **Expected**: the photo is gone from both the edit page and the listing.
 10. Log out, then log in as Agent B (a different account) and go to `/listings`.
     - **Expected**: Agent B's list does not include any of Agent A's listings.
 11. While logged in as Agent B, try visiting `/listings/{id}/edit` using the ID of a listing created
@@ -62,3 +62,5 @@ editing, status changes, and the ownership boundary.
     - **Expected**: only listings matching both filters are shown.
 14. Clear all filters.
     - **Expected**: the full list of Agent A's listings is shown again.
+15. Open one of Agent A's listings for editing and click "Delete this listing," confirming the prompt.
+    - **Expected**: redirected to `/listings`; that listing (and its photo, if it had one) is gone for good — not just marked "closed."

@@ -31,9 +31,9 @@ returns a normalized shape the Blade view's JS can render as a dropdown:
 
 ```json
 [
-  { "street": "123 Main St", "city": "Toronto", "region": "ON", "postal_code": "M5V 2T6", "country": "CA" }
+  { "street": "123 Main St", "city": "Toronto", "state_province": "ON", "postal_code": "M5V 2T6", "country": "CA" }
 ]
 ```
 
-Selecting a suggestion fills `address_line`, `city`, `region`, `postal_code`, and `country` in the
+Selecting a suggestion fills `address_line`, `city`, `state_province`, `postal_code`, and `country` in the
 form; the user may still edit any of them before submitting (FR-006).

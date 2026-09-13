@@ -14,7 +14,7 @@ new profile attributes named in spec.md's Key Entities section. Added via
 | `address_line` | string, nullable | street address; required to mark the profile complete (FR-003) |
 | `address_complement` | string, nullable | unit/suite/apartment number — may stay empty even once the profile is otherwise complete (spec Assumptions) |
 | `city` | string, nullable | required to mark the profile complete (FR-003) |
-| `region` | string, nullable | state (U.S.) or province (Canada); required to mark the profile complete (FR-003) |
+| `state_province` | string, nullable | state (U.S.) or province (Canada); required to mark the profile complete (FR-003) |
 | `postal_code` | string, nullable | required to mark the profile complete (FR-003); the value the address-suggestion lookup is keyed on |
 | `country` | string, nullable | required to mark the profile complete (FR-003); constrained to `CA` or `US` at the validation layer per spec Assumptions (address-suggestion only supports these two for now) |
 | `profile_completed_at` | timestamp, nullable | `null` until every required field above (plus `first_name`, from the 001 entity) has been saved at least once; set to the completion time on success — mirrors `email_verified_at`'s existing pattern |
@@ -41,7 +41,7 @@ does not unset `profile_completed_at`, since every required field is already fil
 
 ### Validation rules (from spec.md Functional Requirements)
 
-- `last_name`, `phone`, `address_line`, `city`, `region`, `postal_code`, `country`: required
+- `last_name`, `phone`, `address_line`, `city`, `state_province`, `postal_code`, `country`: required
   (non-empty) before the profile can be marked complete (FR-003, FR-004)
 - `address_complement`: always optional (spec Assumptions)
 - `country`: one of `CA`, `US` (spec Assumptions — address-suggestion scope)

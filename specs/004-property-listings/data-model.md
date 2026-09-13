@@ -21,26 +21,13 @@ Represents a property an agent has available to sell or rent (from spec.md's Key
 | `currency` | string | `CAD` or `USD`; set automatically from the *agent's own* profile `country` (not the listing's `country`), never accepted as direct input |
 | `area_sqm` | decimal, nullable | property size, in square meters |
 | `description` | text, nullable | free-form description |
+| `photo_path` | string, nullable | where the listing's one photo is stored on the server's local disk; `null` if no photo has been attached |
 | `created_at` / `updated_at` | timestamp | standard Eloquent timestamps |
 
-## Entity: ListingPhoto
-
-Represents an image attached to a `Listing` (from spec.md's Key Entities section).
-
-| Field | Type | Rules |
-|---|---|---|
-| `id` | bigint, primary key | auto-increment |
-| `listing_id` | bigint, foreign key → `listings.id` | required; the listing this photo belongs to |
-| `path` | string | required; where the file is stored on the server's local disk |
-| `sort_order` | integer | required; determines display order among a listing's photos (0-indexed) |
-| `created_at` / `updated_at` | timestamp | standard Eloquent timestamps |
-
-### Relationships
+### Relationship
 
 - `Listing belongsTo User` (via `user_id`) — one agent (`User`) can have many `Listing` records;
   a `Listing` belongs to exactly one agent.
-- `Listing hasMany ListingPhoto` (via `listing_id`) — a `Listing` may have up to 3 `ListingPhoto`
-  records (FR-011, FR-012); a `ListingPhoto` belongs to exactly one `Listing`.
 
 ### State: listing status
 
@@ -63,7 +50,8 @@ whichever status matches reality when they edit the listing.
 - `status`: one of `available`, `pending`, `closed`; set to `available` automatically on creation,
   not required as input when creating (FR-004, FR-007)
 - `area_sqm`, `description`: optional
-- `photos`: at most 3 image files may be attached to a listing at any time (FR-011, FR-012)
+- `photo`: at most one image file may be attached to a listing; uploading a new one replaces the
+  existing one (FR-011, FR-012)
 
 A listing's `created_at` is shown to the agent as the date it was added, and the list of listings
 is ordered by `created_at` descending — newest first (FR-016). No separate "date added" field is
@@ -76,8 +64,9 @@ minimum/maximum `price` — combinable in any mix. These are query parameters on
 not stored data; no new column or entity is introduced. Omitting all of them returns the full list,
 unfiltered.
 
-### State: photo ordering
+### Deletion (FR-019)
 
-A `Listing`'s photos each carry a `sort_order` (their position). Removing a photo (FR-013) deletes
-its file and its `ListingPhoto` row; changing the order (FR-014) reassigns `sort_order` values
-among the listing's remaining photos.
+Deleting a `Listing` is a hard delete — the row (and its photo file, if any) is removed permanently.
+This is distinct from setting `status` to `closed`, which keeps the row (see State above). There's
+no soft-delete/trash step; the confirmation prompt shown before deleting is the only safeguard.
+

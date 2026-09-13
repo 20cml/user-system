@@ -40,7 +40,7 @@ class AddressSuggestionController extends Controller
                 ->map(fn (array $result) => [
                     'street' => $result['address_line1'] ?? $result['street'] ?? '',
                     'city' => $result['city'] ?? '',
-                    'region' => $result['state_code'] ?? $result['state'] ?? '',
+                    'state_province' => $result['state_code'] ?? $result['state'] ?? '',
                     'postal_code' => $result['postcode'] ?? '',
                     'country' => $result['country_code'] ? strtoupper($result['country_code']) : '',
                 ])

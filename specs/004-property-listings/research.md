@@ -91,31 +91,34 @@ happens to be in the U.S.
 - **A free-entry `currency` field** — more flexible in theory, but nothing in the spec calls for a
   currency the agent's own profile country doesn't already determine.
 
+## Decision: A single photo, stored as a `photo_path` column on `listings`, not a separate table
+
+**Rationale**: The first version of this feature allowed up to 3 photos via a separate
+`listing_photos` table (one-to-many, with a `sort_order` for reordering). In practice this turned
+out to be a lot of moving parts — a second model, position selects, remove/reorder inputs — for a
+capability that manual testing showed wasn't earning its complexity yet. A single nullable
+`photo_path` column directly on `listings` removes the second table, the reordering UI, and an
+entire class of bugs that came with it, while still covering the common case (one photo per
+listing). Uploading a new photo simply replaces the old file and column value.
+
+**Alternatives considered**:
+- **Keeping the one-to-many `ListingPhoto` table, capped at 1** — would still carry the extra
+  model, relationship, and join for a cap that never goes above 1. Rejected as needless indirection
+  once the cap dropped to a single photo.
+
 ## Decision: Photos are stored on the local filesystem via Laravel's `Storage` facade
 
 **Rationale**: Laravel's built-in `Storage::disk('public')` handles file uploads without adding any
 new package or third-party service — consistent with constitution Principle I (prefer the
-framework's built-in solutions) and the "no new infrastructure unless justified" constraint. At
-most 3 photos per listing (FR-011, FR-012) keeps storage needs small enough that local disk is
-plainly sufficient for this project's scale.
+framework's built-in solutions) and the "no new infrastructure unless justified" constraint. A
+single photo per listing keeps storage needs small enough that local disk is plainly sufficient for
+this project's scale.
 
 **Alternatives considered**:
 - **A cloud storage provider (e.g., S3)** — the more common production choice, since it doesn't tie
   files to one server's disk. Rejected for now as unjustified infrastructure for a project running
   on a single local/dev server; revisit if this ever needs to run on infrastructure where the disk
   isn't persistent (e.g., some hosting platforms).
-
-## Decision: Photo reordering via a "position" field per photo, not drag-and-drop
-
-**Rationale**: A numbered position field (1st, 2nd, 3rd) per existing photo, submitted with the
-same edit form, reassigns each photo's `sort_order` on save — no new JavaScript library needed
-(Alpine.js, already in the project, isn't suited to full drag-and-drop without a plugin). Simple to
-explain, simple to test.
-
-**Alternatives considered**:
-- **Drag-and-drop reordering** — nicer to use, but requires a JS library this project doesn't have
-  and constitution Principle I discourages adding one without a clear requirement for it. Revisit
-  if agents find the position field cumbersome in practice.
 
 ## Decision: Filters are query parameters handled in `index()`, not a separate endpoint or form submission
 
@@ -127,6 +130,21 @@ No new route, controller, or request class needed.
 **Alternatives considered**:
 - **A `POST` "search" endpoint** — unnecessary; nothing here mutates data or needs a request body,
   and GET means the filtered view is a normal, linkable URL.
+
+## Decision: A `no-cache` middleware on authenticated routes, not per-page fixes
+
+**Rationale**: Manual testing surfaced that some browsers (Safari's back/forward cache especially)
+were serving a stale copy of an authenticated page instead of asking the server again after a
+change — a listing's new photo or status wouldn't show without a hard refresh. Since `/dashboard`,
+`/profile`, and `/listings` all show data that changes on every request, a small
+`PreventBrowserCaching` middleware setting `Cache-Control: no-store, no-cache, must-revalidate` is
+applied to all of them at once, rather than patching each page individually.
+
+**Alternatives considered**:
+- **Telling users to hard-refresh** — not a real fix, and not reasonable to expect from anyone
+  using the app normally.
+- **Meta tags in each Blade view** — HTTP headers are the standard, reliable way to control browser
+  caching; meta-tag equivalents are less consistently honored across browsers.
 
 ## Decision: No restriction on status transitions
 

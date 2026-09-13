@@ -34,7 +34,7 @@ class ProfileTest extends TestCase
                 'phone' => '4165551234',
                 'address_line' => '123 Main St',
                 'city' => 'Toronto',
-                'region' => 'ON',
+                'state_province' => 'ON',
                 'postal_code' => 'M5V 2T6',
                 'country' => 'CA',
             ]);
@@ -64,7 +64,7 @@ class ProfileTest extends TestCase
                 'phone' => '4165551234',
                 'address_line' => '123 Main St',
                 'city' => 'Toronto',
-                'region' => 'ON',
+                'state_province' => 'ON',
                 'postal_code' => 'M5V 2T6',
                 'country' => 'CA',
             ]);

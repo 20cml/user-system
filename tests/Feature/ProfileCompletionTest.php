@@ -20,7 +20,7 @@ class ProfileCompletionTest extends TestCase
             'address_line' => '123 Main St',
             'address_complement' => '',
             'city' => 'Toronto',
-            'region' => 'ON',
+            'state_province' => 'ON',
             'postal_code' => 'M5V 2T6',
             'country' => 'CA',
         ];

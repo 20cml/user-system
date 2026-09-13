@@ -36,11 +36,11 @@ Expected: all tests in `tests/Feature/ProfileCompletionTest.php` pass, including
    - **Expected**: redirected straight back to `/profile`.
 3. In the address field, type a real Canadian postal code (e.g. `M5V 2T6`) or U.S. zip code
    (e.g. `90210`).
-   - **Expected**: a matching suggestion appears; selecting it fills street, city, region, postal
-     code, and country automatically, and those fields remain editable afterward.
-4. Leave one required field empty (e.g. company name) and submit.
+   - **Expected**: a matching suggestion appears; selecting it fills street, city, state/province,
+     postal code, and country automatically, and those fields remain editable afterward.
+4. Leave one required field empty (e.g. last name) and submit.
    - **Expected**: validation error naming the missing field(s); still on `/profile`.
-5. Fill in every required field (phone, address, city, region, postal code, country, company
+5. Fill in every required field (phone, address, city, state/province, postal code, country, last
    name — complement may stay blank) and submit.
    - **Expected**: redirected to `/dashboard` successfully.
 6. Log out, then log back in with the same account.
