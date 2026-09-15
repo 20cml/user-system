@@ -36,8 +36,9 @@ Expected: all tests in `tests/Feature/ProfileCompletionTest.php` pass, including
    - **Expected**: redirected straight back to `/profile`.
 3. In the address field, type a real Canadian postal code (e.g. `M5V 2T6`) or U.S. zip code
    (e.g. `90210`).
-   - **Expected**: a matching suggestion appears; selecting it fills street, city, state/province,
-     postal code, and country automatically, and those fields remain editable afterward.
+   - **Expected**: a matching suggestion appears; selecting it fills city, state/province, and
+     country automatically (street is left for manual entry, since a postal/zip code alone doesn't
+     identify one — see research.md), and those fields remain editable afterward.
 4. Leave one required field empty (e.g. last name) and submit.
    - **Expected**: validation error naming the missing field(s); still on `/profile`.
 5. Fill in every required field (phone, address, city, state/province, postal code, country, last

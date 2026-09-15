@@ -30,7 +30,9 @@ editing, status changes, and the ownership boundary.
    - **Expected**: empty list (or only listings Agent A already created).
 2. Go to `/listings/create`. Type a real postal/zip code in the address field.
    - **Expected**: a matching suggestion appears (same behavior as the profile page), and selecting
-     it fills the rest of the address.
+     it fills city, state/province, and country — the street stays blank for you to type by hand
+     (a postal/zip code alone doesn't identify a specific street; see
+     `specs/003-profile-completion/research.md`).
 3. Submit a new listing with an address (using the autocomplete suggestion, which fills in
    country too), a price, a listing type (sale or rent), a property type, size, and a description —
    attach one photo.

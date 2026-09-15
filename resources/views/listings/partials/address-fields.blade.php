@@ -39,7 +39,6 @@
     (function () {
         var postalInput = document.getElementById('postal_code');
         var suggestionsBox = document.getElementById('address-suggestions');
-        var addressLine = document.getElementById('address_line');
         var cityInput = document.getElementById('city');
         var stateProvinceInput = document.getElementById('state_province');
         var countrySelect = document.getElementById('country');
@@ -62,7 +61,6 @@
                 link.className = 'underline text-indigo-600 hover:text-indigo-900 block';
                 link.textContent = [suggestion.street, suggestion.city, suggestion.state_province, suggestion.postal_code].filter(Boolean).join(', ');
                 link.addEventListener('click', function () {
-                    if (suggestion.street) addressLine.value = suggestion.street;
                     if (suggestion.city) cityInput.value = suggestion.city;
                     if (suggestion.state_province) stateProvinceInput.value = suggestion.state_province;
                     if (suggestion.country) countrySelect.value = suggestion.country;

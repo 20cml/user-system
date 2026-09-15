@@ -35,5 +35,8 @@ returns a normalized shape the Blade view's JS can render as a dropdown:
 ]
 ```
 
-Selecting a suggestion fills `address_line`, `city`, `state_province`, `postal_code`, and `country` in the
-form; the user may still edit any of them before submitting (FR-006).
+Selecting a suggestion fills `city`, `state_province`, and `country` in the form; `postal_code` is
+what the user already typed to trigger the search. `address_line` is left for the user to type
+manually — a postal/zip code alone identifies an area, not a specific street, so the suggestion's
+`street` value (shown in the dropdown text to help tell candidates apart) isn't applied to the
+field automatically. The user may still edit any filled field before submitting (FR-006).

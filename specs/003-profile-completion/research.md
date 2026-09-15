@@ -18,6 +18,23 @@ spec FR-005/FR-006's requirement for real address suggestions, not just city/sta
   but it's a paid product with no meaningful free tier, and doesn't cover the U.S. Rejected on cost
   and scope grounds.
 
+## Decision: Selecting a suggestion never auto-fills `address_line`
+
+**Rationale**: A postal/zip code alone identifies a small area, not one specific street — querying
+Geoapify with just a postal code (no house number or street name) returns a `postcode`-type result
+with no `street`/`housenumber` data at all; its `street` value is really just the postcode's own
+formatted description (e.g., "Toronto, ON M4Y 2P7"), not a real address. Auto-filling `address_line`
+with that text would silently put wrong data in the field. City, state/province, and country *are*
+reliably known at the postcode level, so those still get filled; the street stays for the user to
+type by hand (the dropdown still shows Geoapify's `street` value as part of each suggestion's label,
+which is genuinely useful when the user has typed enough of a real address for it to be accurate —
+just not applied to the field automatically).
+
+**Alternatives considered**:
+- **Auto-filling `address_line` whenever Geoapify returns a non-empty `street` value** — the
+  original design. Confirmed via a direct API call that a bare postal code's `street` value is the
+  postcode's own description, not a real street, so this was filling the field with misleading data.
+
 ## Decision: Enforce the gate via a route middleware, not controller edits
 
 **Rationale**: Spec FR requires that `RegisteredUserController`, `AuthenticatedSessionController`,
