@@ -5,8 +5,9 @@
     <button
         type="button"
         id="photo-preview-clear"
-        class="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center rounded-full bg-red-600 text-white text-xs leading-none hover:bg-red-700"
+        class="absolute -top-2 -right-2 h-7 w-7 flex items-center justify-center rounded-full bg-red-600 text-white text-xs leading-none hover:bg-red-700"
         title="{{ __('Remove selected photo') }}"
+        aria-label="{{ __('Remove selected photo') }}"
     >&times;</button>
 </div>
 
