@@ -61,13 +61,15 @@ class ListingController extends Controller
     {
         $user = $request->user();
 
-        $user->listings()->create([
-            ...$request->safe()->except(['photo', 'remove_photo', 'status']),
+        $listing = $user->listings()->create([
+            ...$request->safe()->except(['photo', 'remove_photo', 'status', 'lead_ids']),
             'status' => 'available',
             'source' => 'manual',
             'currency' => $user->country === 'CA' ? 'CAD' : 'USD',
             'photo_path' => $request->hasFile('photo') ? $request->file('photo')->store('listing-photos', 'public') : null,
         ]);
+
+        $listing->leads()->sync($request->safe()->input('lead_ids', []));
 
         return redirect()->route('listings.index');
     }
@@ -80,18 +82,18 @@ class ListingController extends Controller
         $this->authorize('update', $listing);
 
         return view('listings.edit', [
-            'listing' => $listing,
+            'listing' => $listing->load('leads'),
         ]);
     }
 
     /**
-     * Update an existing listing's details, status, and/or photo.
+     * Update an existing listing's details, status, photo, and/or linked leads.
      */
     public function update(ListingRequest $request, Listing $listing): RedirectResponse
     {
         $this->authorize('update', $listing);
 
-        $listing->fill($request->safe()->except(['photo', 'remove_photo']));
+        $listing->fill($request->safe()->except(['photo', 'remove_photo', 'lead_ids']));
 
         if ($request->boolean('remove_photo') && $listing->photo_path) {
             Storage::disk('public')->delete($listing->photo_path);
@@ -107,6 +109,8 @@ class ListingController extends Controller
         }
 
         $listing->save();
+
+        $listing->leads()->sync($request->safe()->input('lead_ids', []));
 
         return redirect()->route('listings.index');
     }

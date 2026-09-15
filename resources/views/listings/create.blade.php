@@ -1,12 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="font-semibold text-base text-gray-800 leading-tight">
             {{ __('Add a Listing') }}
         </h2>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="pt-2 pb-12">
+        <div class="px-8 sm:px-10">
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     <form method="post" action="{{ route('listings.store') }}" enctype="multipart/form-data" class="space-y-6">
@@ -58,6 +58,17 @@
                             <x-input-label for="photo" :value="__('Photo')" />
                             @include('listings.partials.photo-input')
                             <x-input-error class="mt-2" :messages="$errors->get('photo')" />
+                        </div>
+
+                        <div>
+                            <x-input-label :value="__('Interested leads')" />
+                            @include('partials.tag-picker', [
+                                'name' => 'lead_ids',
+                                'searchUrl' => route('leads.search'),
+                                'placeholder' => __('Search by lead name...'),
+                                'selected' => [],
+                            ])
+                            <x-input-error class="mt-2" :messages="$errors->get('lead_ids')" />
                         </div>
 
                         <div class="flex items-center gap-4">

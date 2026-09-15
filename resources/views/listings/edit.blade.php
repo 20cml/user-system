@@ -1,12 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        <h2 class="font-semibold text-base text-gray-800 leading-tight">
             {{ __('Edit Listing') }}
         </h2>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="pt-2 pb-12">
+        <div class="px-8 sm:px-10">
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     <form method="post" action="{{ route('listings.update', $listing) }}" enctype="multipart/form-data" class="space-y-6">
@@ -71,8 +71,9 @@
                                     <img src="{{ \Illuminate\Support\Facades\Storage::url($listing->photo_path) }}" alt="" class="h-24 w-24 object-cover rounded">
                                     <button
                                         type="button"
-                                        class="photo-remove-button absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center rounded-full bg-red-600 text-white text-xs leading-none hover:bg-red-700"
+                                        class="photo-remove-button absolute -top-2 -right-2 h-7 w-7 flex items-center justify-center rounded-full bg-red-600 text-white text-xs leading-none hover:bg-red-700"
                                         title="{{ __('Remove this photo') }}"
+                                        aria-label="{{ __('Remove this photo') }}"
                                     >&times;</button>
                                     <input type="checkbox" name="remove_photo" value="1" class="hidden">
                                 </div>
@@ -81,6 +82,20 @@
 
                             @include('listings.partials.photo-input')
                             <x-input-error class="mt-2" :messages="$errors->get('photo')" />
+                        </div>
+
+                        <div>
+                            <x-input-label :value="__('Interested leads')" />
+                            @include('partials.tag-picker', [
+                                'name' => 'lead_ids',
+                                'searchUrl' => route('leads.search'),
+                                'placeholder' => __('Search by lead name...'),
+                                'selected' => $listing->leads->map(fn ($lead) => [
+                                    'id' => $lead->id,
+                                    'label' => $lead->name,
+                                ]),
+                            ])
+                            <x-input-error class="mt-2" :messages="$errors->get('lead_ids')" />
                         </div>
 
                         <div class="flex items-center gap-4">

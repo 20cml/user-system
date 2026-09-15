@@ -12,6 +12,7 @@ exposes and what each one does. All routes below are new.
 | PATCH | `/listings/{listing}` | `auth`, `verified`, `profile.complete`, **`ListingPolicy::update`** | Save changes to a listing's details and/or status; replace or remove its photo | Redirects to `/listings` with the updated values, including any status change and photo change (FR-006, FR-007, FR-011, FR-012, FR-013) | 422 + validation errors; 403 if `{listing}` belongs to a different agent (FR-008) |
 | DELETE | `/listings/{listing}` | `auth`, `verified`, `profile.complete`, **`ListingPolicy::delete`** | Permanently delete a listing (and its photo file, if any) | Redirects to `/listings`; the listing is gone (FR-019) | 403 if `{listing}` belongs to a different agent (FR-008) |
 | GET | `/api/address-suggestions?query=...` | `auth` only | Reused as-is from Feature 3 — server-side proxy to the address-lookup API (see `specs/003-profile-completion/contracts/profile-routes.md`) | 200, JSON array of suggestions (may be empty) | 200 with an empty array on any third-party failure |
+| GET | `/api/leads-search?query=...` | `auth` only | Introduced by Feature 5 — search the logged-in agent's own leads by name, for the create/edit form's "interested leads" picker | 200, JSON array of `{id, label}`, at most 10 results (may be empty) | — |
 
 ## Note on `ListingPolicy` (FR-006, FR-008, FR-019)
 
@@ -63,3 +64,13 @@ without replacing it.
 The listing form's postal/zip code field uses the exact same `/api/address-suggestions` endpoint
 and frontend JS pattern as the profile page — no changes to that controller, since it already
 covers both Canada and the United States, matching Listings' own country options.
+
+## Note on linking leads (added by Feature 5)
+
+The create/edit form includes an "Interested leads" search-and-select picker (the same
+`resources/views/partials/tag-picker.blade.php` component used on the `/leads` side — see
+`specs/005-lead-crm/research.md` and `specs/005-lead-crm/contracts/lead-routes.md`), submitting a
+`lead_ids[]` array. `ListingRequest` validates every ID belongs to `auth()->user()->leads()`
+before the controller calls `$listing->leads()->sync($leadIds)`. This is the reverse direction of
+the same `lead_listing` pivot Feature 5 already links from the Lead's own page — an agent can link
+from either side.

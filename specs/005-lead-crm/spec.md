@@ -12,16 +12,16 @@
 
 ### User Story 1 - Add a new lead (Priority: P1)
 
-An agent adds a person who has shown interest in one of their properties, entering their name, phone, and email, so the agent has a record of them going forward.
+An agent adds a person who has shown interest in one of their properties, entering their first and last name, phone, and email, so the agent has a record of them going forward.
 
 **Why this priority**: This is the foundation of the feature — without the ability to add a lead, there is nothing to track, link to a listing, or follow up on.
 
-**Independent Test**: Can be fully tested by submitting a new lead with a name and confirming it appears afterward in the agent's list of leads.
+**Independent Test**: Can be fully tested by submitting a new lead with a first name and confirming it appears afterward in the agent's list of leads.
 
 **Acceptance Scenarios**:
 
-1. **Given** an agent is logged in, **When** they submit a new lead with a name, **Then** the lead is saved and appears in their list of leads with status "new".
-2. **Given** an agent is adding a new lead, **When** they leave the name blank and submit, **Then** the submission is rejected with a clear indication of what's missing.
+1. **Given** an agent is logged in, **When** they submit a new lead with a first name, **Then** the lead is saved and appears in their list of leads with status "new".
+2. **Given** an agent is adding a new lead, **When** they leave the first name blank and submit, **Then** the submission is rejected with a clear indication of what's missing.
 
 ---
 
@@ -67,6 +67,7 @@ An agent logs a note each time they interact with a lead — a call, a message, 
 
 1. **Given** an agent is viewing a lead, **When** they add a note, **Then** the note is saved and shown with the date it was added.
 2. **Given** a lead already has one note, **When** the agent adds a second note, **Then** both notes are shown, most recent first.
+3. **Given** a lead has a note the agent no longer wants (e.g., added by mistake), **When** they delete it and confirm, **Then** the note is permanently removed while the rest of the lead's notes remain.
 
 ---
 
@@ -93,21 +94,22 @@ An agent only ever sees and can edit the leads they personally added — never a
 
 ### Functional Requirements
 
-- **FR-001**: System MUST allow an authenticated agent to create a new lead with a name, and optionally a phone number and email.
-- **FR-002**: System MUST require a name before a lead can be saved.
+- **FR-001**: System MUST allow an authenticated agent to create a new lead with a first name, and optionally a last name, phone number, and email.
+- **FR-002**: System MUST require a first name before a lead can be saved.
 - **FR-003**: System MUST set a newly created lead's status to "new" by default.
 - **FR-004**: Agents MUST be able to view the list of leads they have created.
 - **FR-005**: Agents MUST be able to edit the details of a lead they created.
 - **FR-006**: Agents MUST be able to change a lead's status among "new", "qualified", "visited", "proposal", "closed", and "lost".
 - **FR-007**: Agents MUST be able to link a lead to one or more of their own listings, marking interest.
 - **FR-008**: Agents MUST be able to add a timestamped note to a lead, viewable afterward alongside that lead's other notes, most recent first.
-- **FR-009**: System MUST prevent an agent from viewing, editing, or deleting a lead created by a different agent.
+- **FR-009**: System MUST prevent an agent from viewing, editing, or deleting a lead — or a note on a lead — created by a different agent.
 - **FR-010**: System MUST keep a lead's history (i.e., leads marked "closed" or "lost" remain visible, not deleted) once their status changes.
 - **FR-011**: Agents MUST be able to permanently delete one of their own leads, as a distinct action from marking it "closed" or "lost".
+- **FR-012**: Agents MUST be able to permanently delete a single note from one of their own leads, without affecting that lead's other notes.
 
 ### Key Entities
 
-- **Lead**: A person who has shown interest in one or more of an agent's properties. Attributes: name, phone, email, status (new, qualified, visited, proposal, closed, or lost). Belongs to exactly one agent; may be linked to one or more Listings.
+- **Lead**: A person who has shown interest in one or more of an agent's properties. Attributes: first name, last name, phone, email, status (new, qualified, visited, proposal, closed, or lost). Belongs to exactly one agent; may be linked to one or more Listings.
 - **Lead Note**: A timestamped note logging an interaction with a lead. Belongs to exactly one Lead.
 
 ## Success Criteria _(mandatory)_
@@ -122,7 +124,7 @@ An agent only ever sees and can edit the leads they personally added — never a
 ## Assumptions
 
 - Only the individual agent who creates a lead manages it — there is no team or brokerage-level sharing of leads in this version.
-- A lead's phone and email are both optional — only a name is required, since an agent may only have one way to reach someone at first.
+- A lead's last name, phone, and email are all optional — only a first name is required, since an agent may only catch someone's first name (or have just one way to reach them) at first.
 - A lead can be linked to any number of the agent's own listings; there's no cap.
 - "Closed" and "lost" are historical states, not deletion — a lead marked either way stays visible (FR-010); deleting a lead is a separate, explicit action (FR-011) that can't be undone.
 - No automated reminders or follow-up notifications are part of this version — notes are a manual log only.

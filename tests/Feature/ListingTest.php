@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Lead;
 use App\Models\Listing;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -229,5 +230,36 @@ class ListingTest extends TestCase
 
         $response->assertSee('Listing One');
         $response->assertSee('Listing Two');
+    }
+
+    public function test_linking_leads_to_a_listing_on_create_is_visible_on_edit(): void
+    {
+        $user = User::factory()->create();
+        $leadA = Lead::factory()->for($user)->create(['first_name' => 'Alice', 'last_name' => '']);
+        $leadB = Lead::factory()->for($user)->create(['first_name' => 'Bob', 'last_name' => '']);
+
+        $this->actingAs($user)->post('/listings', $this->listingData([
+            'lead_ids' => [$leadA->id, $leadB->id],
+        ]));
+
+        $listing = Listing::first();
+        $this->assertCount(2, $listing->leads);
+
+        $edit = $this->actingAs($user)->get("/listings/{$listing->id}/edit");
+        $edit->assertSee('Alice');
+        $edit->assertSee('Bob');
+    }
+
+    public function test_linking_another_agents_lead_to_a_listing_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        $otherAgentsLead = Lead::factory()->create();
+
+        $response = $this->actingAs($user)->post('/listings', $this->listingData([
+            'lead_ids' => [$otherAgentsLead->id],
+        ]));
+
+        $response->assertSessionHasErrors('lead_ids.0');
+        $this->assertDatabaseCount('listings', 0);
     }
 }

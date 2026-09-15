@@ -29,6 +29,8 @@ class ListingRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'photo' => ['nullable', 'image', 'max:5120'],
             'remove_photo' => ['nullable', 'boolean'],
+            'lead_ids' => ['array'],
+            'lead_ids.*' => [Rule::exists('leads', 'id')->where('user_id', $this->user()->id)],
         ];
     }
 }
