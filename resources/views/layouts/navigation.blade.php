@@ -1,6 +1,6 @@
-<nav class="w-16 shrink-0 bg-gray-100 flex flex-col items-center gap-2 pt-1 pb-6 pl-5" aria-label="{{ __('Primary') }}">
+<nav class="w-14 shrink-0 bg-gray-700 flex flex-col items-center gap-2 pt-1 pb-6" aria-label="{{ __('Primary') }}">
     <a href="{{ route('dashboard') }}" class="relative top-2 mb-6 flex items-center justify-center h-11 w-11" aria-label="{{ __('Home') }}">
-        <x-application-logo class="h-7 w-7 fill-current text-gray-800" />
+        <x-application-logo class="h-7 w-7 fill-current text-white" />
     </a>
 
     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" :label="__('Dashboard')">
@@ -33,7 +33,7 @@
             <button type="submit"
                     aria-label="{{ __('Log Out') }}"
                     title="{{ __('Log Out') }}"
-                    class="flex items-center justify-center h-11 w-11 rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition">
+                    class="flex items-center justify-center h-11 w-11 rounded-xl text-gray-300 hover:bg-gray-600 hover:text-white transition">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0110.5 3h6a2.25 2.25 0 012.25 2.25v13.5A2.25 2.25 0 0116.5 21h-6a2.25 2.25 0 01-2.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
                 </svg>

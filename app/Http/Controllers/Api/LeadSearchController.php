@@ -16,15 +16,14 @@ class LeadSearchController extends Controller
     {
         $query = trim((string) $request->query('query', ''));
 
-        if ($query === '') {
-            return response()->json([]);
-        }
-
         $leads = $request->user()->leads()
-            ->where(function ($builder) use ($query) {
-                $builder->where('first_name', 'like', "%{$query}%")
-                    ->orWhere('last_name', 'like', "%{$query}%");
+            ->when($query !== '', function ($builder) use ($query) {
+                $builder->where(function ($builder) use ($query) {
+                    $builder->where('first_name', 'like', "%{$query}%")
+                        ->orWhere('last_name', 'like', "%{$query}%");
+                });
             })
+            ->latest()
             ->limit(10)
             ->get(['id', 'first_name', 'last_name']);
 

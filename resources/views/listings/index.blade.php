@@ -1,18 +1,18 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="h-10 flex items-center justify-between">
-            <h2 class="font-semibold text-base text-gray-800 leading-tight">
+        <div class="relative top-1 -left-8 h-10 flex items-center justify-between">
+            <h2 class="font-semibold text-sm text-gray-200 leading-tight">
                 {{ __('My Listings') }}
             </h2>
 
-            <div class="flex items-center gap-2">
+            <div class="relative -top-2.5 mr-2 flex items-center gap-2">
                 <x-dropdown align="right" width="w-64" rounded="rounded-2xl" content-classes="bg-white px-4 py-3" :close-on-click="false">
                     <x-slot name="trigger">
                         <button type="button"
-                                class="h-9 w-9 flex items-center justify-center rounded-full bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
+                                class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-700 border border-gray-400 text-gray-400 hover:bg-gray-600"
                                 aria-label="{{ __('Filter listings') }}"
                                 title="{{ __('Filter listings') }}">
-                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor">
                                 <path stroke-linecap="round" d="M4 6h16M7 12h10M10 18h4" />
                             </svg>
                         </button>
@@ -89,8 +89,8 @@
                     </x-slot>
                 </x-dropdown>
 
-                <a href="{{ route('listings.create') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 rounded-full font-medium text-sm text-gray-800 hover:bg-gray-50">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <a href="{{ route('listings.create') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full font-medium text-xs text-gray-800 hover:bg-gray-50">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     {{ __('Add listing') }}
@@ -99,8 +99,9 @@
         </div>
     </x-slot>
 
-    <div class="pt-6 pb-12">
-        <div class="px-8 sm:px-10 space-y-0">
+    <div class="pt-6 pb-4 flex-1 flex flex-col min-h-0">
+        <div class="px-4 sm:px-6 flex-1 flex flex-col min-h-0">
+        <div class="flex-1 min-h-0 overflow-y-auto">
             @forelse ($listings as $listing)
                 @if ($loop->first)
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -134,6 +135,13 @@
                     {{ __('No listings yet.') }}
                 </div>
             @endforelse
+        </div>
+
+            <div class="pt-3 border-t border-gray-200">
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-200 text-xs font-medium text-gray-700">
+                    {{ $listings->count() }} {{ __('listings') }}
+                </span>
+            </div>
         </div>
     </div>
 </x-app-layout>

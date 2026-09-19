@@ -15,23 +15,25 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
-        <div class="flex min-h-screen bg-gray-100">
+        <div class="h-screen bg-gray-700 flex overflow-hidden">
             @include('layouts.navigation')
 
-            <div class="flex-1 min-w-0">
-                <!-- Page Heading -->
+            <div class="flex-1 min-w-0 flex flex-col min-h-0">
+                <!-- Page Heading (sits on the dark frame) -->
                 @isset($header)
                     <header>
-                        <div class="pt-6 pb-0 px-8 sm:px-10">
+                        <div class="pt-3 pb-0 pl-8 sm:pl-10 pr-0">
                             {{ $header }}
                         </div>
                     </header>
                 @endisset
 
-                <!-- Page Content -->
-                <main>
-                    {{ $slot }}
-                </main>
+                <!-- thin gray gap between the dark frame and the content card, all corners curved -->
+                <div class="flex-1 bg-gray-200 rounded-tl-2xl min-h-0 flex flex-col">
+                    <main class="ml-4 mt-4 mr-4 mb-4 bg-gray-50 rounded-xl flex-1 min-h-0 flex flex-col overflow-y-auto">
+                        {{ $slot }}
+                    </main>
+                </div>
             </div>
         </div>
     </body>

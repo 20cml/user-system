@@ -16,19 +16,18 @@ class ListingSearchController extends Controller
     {
         $query = trim((string) $request->query('query', ''));
 
-        if ($query === '') {
-            return response()->json([]);
-        }
-
         $listings = $request->user()->listings()
-            ->where(function ($builder) use ($query) {
-                $builder->where('address_line', 'like', "%{$query}%")
-                    ->orWhere('city', 'like', "%{$query}%");
+            ->when($query !== '', function ($builder) use ($query) {
+                $builder->where(function ($builder) use ($query) {
+                    $builder->where('address_line', 'like', "%{$query}%")
+                        ->orWhere('city', 'like', "%{$query}%");
 
-                if (ctype_digit($query)) {
-                    $builder->orWhere('id', (int) $query);
-                }
+                    if (ctype_digit($query)) {
+                        $builder->orWhere('id', (int) $query);
+                    }
+                });
             })
+            ->latest()
             ->limit(10)
             ->get(['id', 'address_line', 'city']);
 

@@ -1,11 +1,16 @@
 @props(['active' => false, 'label' => null])
 
-@php
-$classes = ($active ?? false)
-            ? 'flex items-center justify-center h-11 w-11 rounded-xl bg-red-50 text-red-600 transition'
-            : 'flex items-center justify-center h-11 w-11 rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition';
-@endphp
-
-<a {{ $attributes->merge(['class' => $classes, 'aria-label' => $label, 'title' => $label]) }}>
-    {{ $slot }}
+<a {{ $attributes->merge([
+        'class' => 'flex items-center justify-center h-11 w-11 rounded-full transition '
+            . (($active ?? false) ? '' : 'text-gray-300 hover:bg-gray-600 hover:text-white'),
+        'aria-label' => $label,
+        'title' => $label,
+    ]) }}>
+    @if ($active ?? false)
+        <span class="flex items-center justify-center h-9 w-9 rounded-full bg-gray-500 text-white">
+            {{ $slot }}
+        </span>
+    @else
+        {{ $slot }}
+    @endif
 </a>

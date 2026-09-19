@@ -3,11 +3,11 @@
 @endphp
 
 <div class="tag-picker" data-search-url="{{ $searchUrl }}" data-field-name="{{ $name }}">
-    <input type="text" class="tag-picker-input mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm" placeholder="{{ $placeholder }}" autocomplete="off">
-    <div class="tag-picker-suggestions mt-1 text-sm space-y-1"></div>
+    <input type="text" class="tag-picker-input mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm !text-[12.1px]" placeholder="{{ $placeholder }}" autocomplete="off">
+    <div class="tag-picker-suggestions mt-1 text-[12.1px] max-h-48 overflow-y-auto rounded-md empty:hidden"></div>
     <div class="tag-picker-chips mt-2 flex flex-wrap gap-2">
         @foreach ($selected as $item)
-            <span class="tag-picker-chip inline-flex items-center gap-1 bg-gray-100 rounded-full pl-3 pr-2 py-1 text-sm">
+            <span class="tag-picker-chip inline-flex items-center gap-1 bg-gray-100 rounded-full pl-3 pr-2 py-1 text-[12.1px]">
                 {{ $item['label'] }}
                 <button type="button" class="tag-picker-remove h-5 w-5 flex items-center justify-center text-gray-500 hover:text-red-600" aria-label="{{ __('Remove :label', ['label' => $item['label']]) }}">&times;</button>
                 <input type="hidden" name="{{ $name }}[]" value="{{ $item['id'] }}">
@@ -51,7 +51,7 @@
                 }
 
                 var chip = document.createElement('span');
-                chip.className = 'tag-picker-chip inline-flex items-center gap-1 bg-gray-100 rounded-full pl-3 pr-2 py-1 text-sm';
+                chip.className = 'tag-picker-chip inline-flex items-center gap-1 bg-gray-100 rounded-full pl-3 pr-2 py-1 text-[12.1px]';
 
                 var label = document.createTextNode(item.label);
                 chip.appendChild(label);
@@ -75,19 +75,26 @@
 
             function clearSuggestions() {
                 suggestionsBox.innerHTML = '';
+                suggestionsBox.classList.remove('border', 'border-gray-200', 'divide-y', 'divide-gray-100');
             }
 
             function renderSuggestions(items) {
                 clearSuggestions();
 
-                items.forEach(function (item) {
-                    if (selectedIds().indexOf(String(item.id)) !== -1) {
-                        return;
-                    }
+                var visibleItems = items.filter(function (item) {
+                    return selectedIds().indexOf(String(item.id)) === -1;
+                });
 
+                if (!visibleItems.length) {
+                    return;
+                }
+
+                suggestionsBox.classList.add('border', 'border-gray-200', 'divide-y', 'divide-gray-100');
+
+                visibleItems.forEach(function (item) {
                     var button = document.createElement('button');
                     button.type = 'button';
-                    button.className = 'underline text-indigo-600 hover:text-indigo-900 block';
+                    button.className = 'block w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700';
                     button.textContent = item.label;
                     button.addEventListener('click', function () {
                         addChip(item);
@@ -109,14 +116,11 @@
 
             input.addEventListener('input', function () {
                 clearTimeout(debounceTimer);
-                var query = input.value.trim();
+                debounceTimer = setTimeout(function () { fetchSuggestions(input.value.trim()); }, 300);
+            });
 
-                if (query.length < 1) {
-                    clearSuggestions();
-                    return;
-                }
-
-                debounceTimer = setTimeout(function () { fetchSuggestions(query); }, 300);
+            input.addEventListener('focus', function () {
+                fetchSuggestions(input.value.trim());
             });
         });
     })();
