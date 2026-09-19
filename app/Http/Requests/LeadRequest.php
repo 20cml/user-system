@@ -20,7 +20,11 @@ class LeadRequest extends FormRequest
             'last_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'string', 'email', 'max:255'],
-            'status' => ['sometimes', Rule::in(['new', 'qualified', 'visited', 'proposal', 'closed', 'lost'])],
+            'type' => ['nullable', Rule::in(['buyer', 'seller', 'investor', 'renter', 'landlord'])],
+            'financing_preapproval' => ['boolean'],
+            'financing_income_proof' => ['boolean'],
+            'financing_id_document' => ['boolean'],
+            'status' => ['sometimes', Rule::in(['new', 'contacted', 'qualified', 'active_search', 'visited', 'proposal', 'closed', 'lost'])],
             'listing_ids' => ['array'],
             'listing_ids.*' => [Rule::exists('listings', 'id')->where('user_id', $this->user()->id)],
         ];

@@ -13,7 +13,13 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    $statuses = ['new', 'contacted', 'qualified', 'active_search', 'visited', 'proposal', 'closed', 'lost'];
+
+    $leads = auth()->user()->leads()->latest()->get()->groupBy('status');
+
+    $leadsByStatus = collect($statuses)->mapWithKeys(fn ($status) => [$status => $leads->get($status, collect())]);
+
+    return view('dashboard', ['leadsByStatus' => $leadsByStatus]);
 })->middleware(['auth', 'verified', 'profile.complete', 'no-cache'])->name('dashboard');
 
 Route::middleware(['auth', 'no-cache'])->group(function () {

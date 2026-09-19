@@ -56,6 +56,7 @@ class LeadController extends Controller
         ]);
 
         $lead->listings()->sync($request->safe()->input('listing_ids', []));
+        $lead->advanceBuyerFunnel();
 
         return redirect()->route('leads.index');
     }
@@ -79,8 +80,14 @@ class LeadController extends Controller
     {
         $this->authorize('update', $lead);
 
-        $lead->update($request->safe()->except(['listing_ids']));
+        $lead->update([
+            ...$request->safe()->except(['listing_ids', 'financing_preapproval', 'financing_income_proof', 'financing_id_document']),
+            'financing_preapproval' => $request->boolean('financing_preapproval'),
+            'financing_income_proof' => $request->boolean('financing_income_proof'),
+            'financing_id_document' => $request->boolean('financing_id_document'),
+        ]);
         $lead->listings()->sync($request->safe()->input('listing_ids', []));
+        $lead->advanceBuyerFunnel();
 
         return redirect()->route('leads.index');
     }
@@ -107,6 +114,7 @@ class LeadController extends Controller
         $request->validate(['body' => ['required', 'string']]);
 
         $lead->notes()->create(['body' => $request->input('body')]);
+        $lead->advanceBuyerFunnel();
 
         return redirect()->route('leads.edit', $lead);
     }
