@@ -13,7 +13,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    $statuses = ['new', 'contacted', 'qualified', 'active_search', 'visited', 'proposal', 'closed', 'lost'];
+    $statuses = ['new', 'contacted', 'qualified', 'offer', 'under_contract', 'closed'];
 
     $leads = auth()->user()->leads()->latest()->get()->groupBy('status');
 
@@ -40,7 +40,6 @@ Route::middleware(['auth', 'verified', 'profile.complete', 'no-cache'])->group(f
     Route::delete('/listings/{listing}', [ListingController::class, 'destroy'])->name('listings.destroy');
 
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
-    Route::get('/leads/create', [LeadController::class, 'create'])->name('leads.create');
     Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
     Route::get('/leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
     Route::patch('/leads/{lead}', [LeadController::class, 'update'])->name('leads.update');

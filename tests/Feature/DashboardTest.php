@@ -17,7 +17,7 @@ class DashboardTest extends TestCase
         $otherAgent = User::factory()->create();
 
         Lead::factory()->for($user)->count(2)->create(['status' => 'new']);
-        Lead::factory()->for($user)->create(['status' => 'qualified', 'first_name' => 'Qualified', 'last_name' => 'Lead']);
+        Lead::factory()->for($user)->create(['status' => 'contacted', 'first_name' => 'Contacted', 'last_name' => 'Lead']);
         Lead::factory()->for($otherAgent)->create(['status' => 'new']);
 
         $response = $this->actingAs($user)->get('/dashboard');
@@ -25,10 +25,25 @@ class DashboardTest extends TestCase
         $response->assertOk();
         $response->assertViewHas('leadsByStatus', function ($leadsByStatus) {
             return $leadsByStatus['new']->count() === 2
-                && $leadsByStatus['qualified']->count() === 1
-                && $leadsByStatus['lost']->count() === 0;
+                && $leadsByStatus['contacted']->count() === 1;
+        });
+        $response->assertSee('Contacted Lead');
+    }
+
+    public function test_dashboard_excludes_leads_outside_the_visible_pipeline_stages(): void
+    {
+        $user = User::factory()->create();
+        Lead::factory()->for($user)->create(['status' => 'qualified', 'first_name' => 'Qualified', 'last_name' => 'Lead']);
+        Lead::factory()->for($user)->create(['status' => 'lost', 'first_name' => 'Lost', 'last_name' => 'Lead']);
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        $response->assertOk();
+        $response->assertViewHas('leadsByStatus', function ($leadsByStatus) {
+            return isset($leadsByStatus['qualified']) && ! isset($leadsByStatus['lost']);
         });
         $response->assertSee('Qualified Lead');
+        $response->assertDontSee('Lost Lead');
     }
 
     public function test_dashboard_shows_empty_columns_when_the_agent_has_no_leads(): void

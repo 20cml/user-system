@@ -23,7 +23,7 @@ class ListingRequest extends FormRequest
             'country' => ['required', Rule::in(['CA', 'US'])],
             'price' => ['required', 'numeric', 'gt:0'],
             'listing_type' => ['required', Rule::in(['sale', 'rent'])],
-            'property_type' => ['required', Rule::in(['house', 'apartment', 'land', 'commercial'])],
+            'property_type' => ['required', Rule::in(['house', 'condo', 'land', 'commercial'])],
             'status' => ['sometimes', Rule::in(['available', 'pending', 'closed'])],
             'area_sqm' => ['nullable', 'numeric'],
             'description' => ['nullable', 'string'],

@@ -23,7 +23,7 @@ class ListingFactory extends Factory
             'user_id' => User::factory(),
             'source' => 'manual',
             'listing_type' => fake()->randomElement(['sale', 'rent']),
-            'property_type' => fake()->randomElement(['house', 'apartment', 'land', 'commercial']),
+            'property_type' => fake()->randomElement(['house', 'condo', 'land', 'commercial']),
             'status' => 'available',
             'address_line' => fake()->streetAddress(),
             'city' => fake()->city(),

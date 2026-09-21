@@ -93,128 +93,6 @@ class LeadTest extends TestCase
         $this->assertNull($lead->type);
     }
 
-    public function test_first_note_on_a_new_buyer_lead_moves_it_to_contacted(): void
-    {
-        $user = User::factory()->create();
-        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'status' => 'new']);
-
-        $this->actingAs($user)->post("/leads/{$lead->id}/notes", ['body' => 'Left a voicemail.']);
-
-        $this->assertSame('contacted', $lead->fresh()->status);
-    }
-
-    public function test_completing_the_financing_checklist_on_a_contacted_buyer_lead_moves_it_to_qualified(): void
-    {
-        $user = User::factory()->create();
-        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'status' => 'contacted']);
-
-        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
-            'financing_preapproval' => '1',
-            'financing_income_proof' => '1',
-            'financing_id_document' => '1',
-        ]));
-
-        $this->assertSame('qualified', $lead->fresh()->status);
-    }
-
-    public function test_linking_a_listing_to_a_qualified_buyer_lead_moves_it_to_active_search(): void
-    {
-        $user = User::factory()->create();
-        $listing = Listing::factory()->for($user)->create();
-        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'status' => 'qualified']);
-
-        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
-            'listing_ids' => [$listing->id],
-        ]));
-
-        $this->assertSame('active_search', $lead->fresh()->status);
-    }
-
-    public function test_linking_a_listing_to_a_new_buyer_lead_does_not_advance_it_to_active_search(): void
-    {
-        $user = User::factory()->create();
-        $listing = Listing::factory()->for($user)->create();
-        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'status' => 'new']);
-
-        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
-            'listing_ids' => [$listing->id],
-        ]));
-
-        $this->assertSame('new', $lead->fresh()->status);
-    }
-
-    public function test_completing_the_checklist_before_any_note_waits_for_the_first_note_then_jumps_to_qualified(): void
-    {
-        $user = User::factory()->create();
-        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'status' => 'new']);
-
-        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
-            'financing_preapproval' => '1',
-            'financing_income_proof' => '1',
-            'financing_id_document' => '1',
-        ]));
-        $this->assertSame('new', $lead->fresh()->status);
-
-        $this->actingAs($user)->post("/leads/{$lead->id}/notes", ['body' => 'First contact.']);
-        $this->assertSame('qualified', $lead->fresh()->status);
-    }
-
-    public function test_removing_a_note_or_unchecking_the_checklist_does_not_move_status_backward(): void
-    {
-        $user = User::factory()->create();
-        $lead = Lead::factory()->for($user)->create([
-            'type' => 'buyer',
-            'status' => 'active_search',
-            'financing_preapproval' => true,
-            'financing_income_proof' => true,
-            'financing_id_document' => true,
-        ]);
-        $note = $lead->notes()->create(['body' => 'Only note.']);
-
-        $this->actingAs($user)->delete("/leads/{$lead->id}/notes/{$note->id}");
-        $this->assertSame('active_search', $lead->fresh()->status);
-
-        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
-            'financing_income_proof' => '1',
-            'financing_id_document' => '1',
-        ]));
-        $this->assertSame('active_search', $lead->fresh()->status);
-    }
-
-    public function test_marking_a_lead_lost_blocks_every_automatic_transition(): void
-    {
-        $user = User::factory()->create();
-        $listing = Listing::factory()->for($user)->create();
-
-        // Lost from 'new': adding a note should not move it to Contacted.
-        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'status' => 'lost']);
-        $this->actingAs($user)->post("/leads/{$lead->id}/notes", ['body' => 'Trying anyway.']);
-        $this->assertSame('lost', $lead->fresh()->status);
-
-        // Lost from what would have been 'contacted': completing the checklist should not qualify it.
-        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'status' => 'lost']);
-        $lead->notes()->create(['body' => 'Already contacted before going lost.']);
-        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
-            'financing_preapproval' => '1',
-            'financing_income_proof' => '1',
-            'financing_id_document' => '1',
-        ]));
-        $this->assertSame('lost', $lead->fresh()->status);
-
-        // Lost from what would have been 'qualified': linking a listing should not activate the search.
-        $lead = Lead::factory()->for($user)->create([
-            'type' => 'buyer',
-            'status' => 'lost',
-            'financing_preapproval' => true,
-            'financing_income_proof' => true,
-            'financing_id_document' => true,
-        ]);
-        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
-            'listing_ids' => [$listing->id],
-        ]));
-        $this->assertSame('lost', $lead->fresh()->status);
-    }
-
     public function test_an_agent_can_still_manually_change_a_lost_leads_status(): void
     {
         $user = User::factory()->create();
@@ -223,6 +101,161 @@ class LeadTest extends TestCase
         $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData(['status' => 'new']));
 
         $this->assertSame('new', $lead->fresh()->status);
+    }
+
+    public function test_checking_a_document_on_a_buyer_condo_lead_persists_it(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo']);
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'documents' => ['buyer_representation_agreement' => '1'],
+        ]));
+
+        $checklist = $lead->fresh()->documentChecklistForStage('qualified');
+        $this->assertTrue($checklist['buyer_representation_agreement']['checked']);
+        $this->assertFalse($checklist['disclosures']['checked']);
+    }
+
+    public function test_unchecking_a_document_persists_it(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo']);
+        $lead->documents()->create(['key' => 'buyer_representation_agreement', 'checked' => true]);
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'documents' => [],
+        ]));
+
+        $this->assertFalse($lead->fresh()->documentChecklistForStage('qualified')['buyer_representation_agreement']['checked']);
+    }
+
+    public function test_document_checklists_for_different_stages_are_independent(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo']);
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'documents' => ['reco_information_guide' => '1'],
+        ]));
+
+        $lead->refresh();
+        $this->assertTrue($lead->documentChecklistForStage('contacted')['reco_information_guide']['checked']);
+        $this->assertFalse($lead->documentChecklistForStage('offer')['agreement_of_purchase_and_sale']['checked']);
+    }
+
+    public function test_checking_the_reco_guide_moves_a_new_lead_to_contacted(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'new']);
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'documents' => ['reco_information_guide' => '1'],
+        ]));
+
+        $this->assertSame('contacted', $lead->fresh()->status);
+    }
+
+    public function test_status_reflects_the_furthest_complete_stage(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'new']);
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'documents' => [
+                'reco_information_guide' => '1',
+                'buyer_representation_agreement' => '1',
+                'disclosures' => '1',
+                'agreement_of_purchase_and_sale' => '1',
+                'schedules_addendums' => '1',
+                'deposit_receipt' => '1',
+                'proof_of_deposit' => '1',
+            ],
+        ]));
+
+        $this->assertSame('offer', $lead->fresh()->status);
+    }
+
+    public function test_status_stops_at_the_first_incomplete_stage(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'new']);
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'documents' => [
+                'reco_information_guide' => '1',
+                // 'qualified' and 'offer' are left incomplete, but 'under_contract' is fully checked.
+                'amendments' => '1',
+                'waivers' => '1',
+                'notices_of_fulfillment' => '1',
+                'status_certificate' => '1',
+            ],
+        ]));
+
+        $this->assertSame('contacted', $lead->fresh()->status);
+    }
+
+    public function test_status_regresses_when_a_document_is_unchecked(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'qualified']);
+        $lead->documents()->create(['key' => 'reco_information_guide', 'checked' => true]);
+        $lead->documents()->create(['key' => 'buyer_representation_agreement', 'checked' => true]);
+        $lead->documents()->create(['key' => 'disclosures', 'checked' => true]);
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'documents' => [
+                'reco_information_guide' => '1',
+                'buyer_representation_agreement' => '1',
+                // 'disclosures' is left unchecked this time.
+            ],
+        ]));
+
+        $this->assertSame('contacted', $lead->fresh()->status);
+    }
+
+    public function test_advancing_status_from_documents_is_blocked_when_the_lead_is_lost(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'lost']);
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'documents' => ['reco_information_guide' => '1'],
+        ]));
+
+        $this->assertSame('lost', $lead->fresh()->status);
+    }
+
+    public function test_a_non_buyer_lead_has_no_document_checklist(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'seller', 'property_type' => 'condo']);
+
+        $this->assertFalse($lead->hasDocumentChecklist());
+    }
+
+    public function test_a_buyer_lead_with_a_property_type_other_than_condo_has_no_document_checklist_yet(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'house']);
+
+        $this->assertFalse($lead->hasDocumentChecklist());
+    }
+
+    public function test_a_buyer_lead_without_a_property_type_has_no_document_checklist(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => null]);
+
+        $this->assertFalse($lead->hasDocumentChecklist());
     }
 
     public function test_missing_first_name_is_rejected(): void

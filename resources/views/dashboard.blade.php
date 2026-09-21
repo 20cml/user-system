@@ -10,6 +10,28 @@
             <h2 class="font-semibold text-sm text-gray-200 leading-tight" x-text="greeting + ', {{ auth()->user()->first_name }}'">
                 {{ auth()->user()->first_name }}
             </h2>
+
+            <div class="relative -top-2.5 mr-2 flex items-center gap-2">
+                <x-dropdown align="right" width="w-40" rounded="rounded-2xl" content-classes="bg-white px-2 py-2">
+                    <x-slot name="trigger">
+                        <button type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full font-medium text-[12.1px] leading-none text-gray-800 hover:bg-gray-50">
+                            {{ __('Buyer Pipeline') }}
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </button>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        <div class="flex items-center justify-between px-3 py-2 text-[12.1px] text-gray-900">
+                            {{ __('Buyer') }}
+                            <svg class="h-4 w-4 text-gray-700" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                        </div>
+                    </x-slot>
+                </x-dropdown>
+            </div>
         </div>
     </x-slot>
 
@@ -20,11 +42,9 @@
                     'new' => __('New'),
                     'contacted' => __('Contacted'),
                     'qualified' => __('Qualified'),
-                    'active_search' => __('Active Search'),
-                    'visited' => __('Visited'),
-                    'proposal' => __('Proposal'),
+                    'offer' => __('Offer'),
+                    'under_contract' => __('Under Contract'),
                     'closed' => __('Closed'),
-                    'lost' => __('Lost'),
                 ] as $status => $label)
                     <div class="shrink-0 w-72 flex flex-col">
                         <div class="flex items-center gap-2 px-1 mb-2">

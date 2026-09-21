@@ -70,7 +70,6 @@ class ListingController extends Controller
         ]);
 
         $listing->leads()->sync($request->safe()->input('lead_ids', []));
-        $listing->leads()->get()->each->advanceBuyerFunnel();
 
         return redirect()->route('listings.index');
     }
@@ -112,7 +111,6 @@ class ListingController extends Controller
         $listing->save();
 
         $listing->leads()->sync($request->safe()->input('lead_ids', []));
-        $listing->leads()->get()->each->advanceBuyerFunnel();
 
         return redirect()->route('listings.index');
     }

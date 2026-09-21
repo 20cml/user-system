@@ -6,6 +6,7 @@ use App\Http\Requests\LeadRequest;
 use App\Models\Lead;
 use App\Models\LeadNote;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,12 +18,16 @@ class LeadController extends Controller
     /**
      * List the logged-in agent's own leads, newest first.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
         $leads = $request->user()->leads()->latest();
 
         if ($statuses = $request->query('status')) {
             $leads->whereIn('status', (array) $statuses);
+        }
+
+        if ($types = $request->query('type')) {
+            $leads->whereIn('type', (array) $types);
         }
 
         if ($name = trim((string) $request->query('name'))) {
@@ -32,17 +37,18 @@ class LeadController extends Controller
             });
         }
 
-        return view('leads.index', [
-            'leads' => $leads->get(),
-        ]);
-    }
+        $leads = $leads->get();
 
-    /**
-     * Show the form for adding a new lead.
-     */
-    public function create(): View
-    {
-        return view('leads.create');
+        if ($request->ajax()) {
+            return response()->json([
+                'rows' => view('leads.partials.rows', ['leads' => $leads])->render(),
+                'count' => $leads->count(),
+            ]);
+        }
+
+        return view('leads.index', [
+            'leads' => $leads,
+        ]);
     }
 
     /**
@@ -56,7 +62,6 @@ class LeadController extends Controller
         ]);
 
         $lead->listings()->sync($request->safe()->input('listing_ids', []));
-        $lead->advanceBuyerFunnel();
 
         return redirect()->route('leads.index');
     }
@@ -69,7 +74,7 @@ class LeadController extends Controller
         $this->authorize('update', $lead);
 
         return view('leads.edit', [
-            'lead' => $lead->load('listings', 'notes'),
+            'lead' => $lead->load('listings', 'notes', 'documents'),
         ]);
     }
 
@@ -80,16 +85,24 @@ class LeadController extends Controller
     {
         $this->authorize('update', $lead);
 
-        $lead->update([
-            ...$request->safe()->except(['listing_ids', 'financing_preapproval', 'financing_income_proof', 'financing_id_document']),
-            'financing_preapproval' => $request->boolean('financing_preapproval'),
-            'financing_income_proof' => $request->boolean('financing_income_proof'),
-            'financing_id_document' => $request->boolean('financing_id_document'),
-        ]);
+        $lead->update($request->safe()->except(['listing_ids', 'documents']));
         $lead->listings()->sync($request->safe()->input('listing_ids', []));
-        $lead->advanceBuyerFunnel();
 
-        return redirect()->route('leads.index');
+        $submittedDocuments = $request->input('documents', []);
+        $allDocumentKeys = collect(Lead::DOCUMENTS_BY_TYPE[$lead->type][$lead->property_type] ?? [])
+            ->flatMap(fn ($docs) => array_keys($docs))
+            ->unique();
+
+        foreach ($allDocumentKeys as $key) {
+            $lead->documents()->updateOrCreate(
+                ['key' => $key],
+                ['checked' => (bool) ($submittedDocuments[$key] ?? false)],
+            );
+        }
+
+        $lead->advanceStatusFromDocuments();
+
+        return redirect()->route('leads.edit', [$lead, 'open' => $request->input('section')]);
     }
 
     /**
@@ -114,7 +127,6 @@ class LeadController extends Controller
         $request->validate(['body' => ['required', 'string']]);
 
         $lead->notes()->create(['body' => $request->input('body')]);
-        $lead->advanceBuyerFunnel();
 
         return redirect()->route('leads.edit', $lead);
     }
