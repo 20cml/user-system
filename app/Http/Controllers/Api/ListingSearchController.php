@@ -15,6 +15,7 @@ class ListingSearchController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $query = trim((string) $request->query('query', ''));
+        $propertyType = $request->query('property_type');
 
         $listings = $request->user()->listings()
             ->when($query !== '', function ($builder) use ($query) {
@@ -27,6 +28,7 @@ class ListingSearchController extends Controller
                     }
                 });
             })
+            ->when($propertyType, fn ($builder) => $builder->where('property_type', $propertyType))
             ->latest()
             ->limit(10)
             ->get(['id', 'address_line', 'city']);

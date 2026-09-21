@@ -6,7 +6,7 @@
             </h2>
 
             <div class="relative -top-2.5 mr-2 flex items-center gap-2">
-                <x-dropdown align="right" width="w-64" rounded="rounded-2xl" content-classes="bg-white px-4 py-3" :close-on-click="false">
+                <x-dropdown align="right" width="w-64" rounded="rounded-2xl" content-classes="bg-white px-4 py-3" :close-on-click="false" :initial-open="request()->hasAny(['status', 'listing_type', 'property_type', 'min_price', 'max_price'])">
                     <x-slot name="trigger">
                         <button type="button"
                                 class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-700 border border-gray-400 text-gray-400 hover:bg-gray-600"
@@ -44,7 +44,7 @@
                                 <select id="filter_property_type" name="property_type" onchange="this.form.submit()" class="block w-full border-gray-300 focus:border-gray-400 focus:ring-0 rounded-md text-[13px]">
                                     <option value="">{{ __('Any') }}</option>
                                     <option value="house" @selected(request('property_type') === 'house')>{{ __('House') }}</option>
-                                    <option value="apartment" @selected(request('property_type') === 'apartment')>{{ __('Apartment') }}</option>
+                                    <option value="condo" @selected(request('property_type') === 'condo')>{{ __('Condo') }}</option>
                                     <option value="land" @selected(request('property_type') === 'land')>{{ __('Land') }}</option>
                                     <option value="commercial" @selected(request('property_type') === 'commercial')>{{ __('Commercial') }}</option>
                                 </select>

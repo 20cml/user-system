@@ -40,7 +40,7 @@
                             <select id="property_type" name="property_type" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm !text-[12.1px]" required>
                                 <option value="">{{ __('Select one') }}</option>
                                 <option value="house" @selected(old('property_type') === 'house')>{{ __('House') }}</option>
-                                <option value="apartment" @selected(old('property_type') === 'apartment')>{{ __('Apartment') }}</option>
+                                <option value="condo" @selected(old('property_type') === 'condo')>{{ __('Condo') }}</option>
                                 <option value="land" @selected(old('property_type') === 'land')>{{ __('Land') }}</option>
                                 <option value="commercial" @selected(old('property_type') === 'commercial')>{{ __('Commercial') }}</option>
                             </select>

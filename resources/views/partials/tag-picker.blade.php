@@ -2,9 +2,9 @@
     $selected = $selected ?? [];
 @endphp
 
-<div class="tag-picker" data-search-url="{{ $searchUrl }}" data-field-name="{{ $name }}">
+<div class="tag-picker relative" data-search-url="{{ $searchUrl }}" data-field-name="{{ $name }}" @if (isset($extraParamsExpr)) :data-extra-params="{{ $extraParamsExpr }}" @endif>
     <input type="text" class="tag-picker-input mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm !text-[12.1px]" placeholder="{{ $placeholder }}" autocomplete="off">
-    <div class="tag-picker-suggestions mt-1 text-[12.1px] max-h-48 overflow-y-auto rounded-md empty:hidden"></div>
+    <div class="tag-picker-suggestions absolute z-10 mt-1 w-full text-[12.1px] max-h-48 overflow-y-auto rounded-md bg-white shadow-lg empty:hidden"></div>
     <div class="tag-picker-chips mt-2 flex flex-wrap gap-2">
         @foreach ($selected as $item)
             <span class="tag-picker-chip inline-flex items-center gap-1 bg-gray-100 rounded-full pl-3 pr-2 py-1 text-[12.1px]">
@@ -106,7 +106,8 @@
             }
 
             function fetchSuggestions(query) {
-                fetch(searchUrl + '?query=' + encodeURIComponent(query), {
+                var extra = picker.dataset.extraParams || '';
+                fetch(searchUrl + '?query=' + encodeURIComponent(query) + (extra ? '&' + extra : ''), {
                     headers: { Accept: 'application/json' },
                 })
                     .then(function (response) { return response.ok ? response.json() : []; })
@@ -121,6 +122,19 @@
 
             input.addEventListener('focus', function () {
                 fetchSuggestions(input.value.trim());
+            });
+
+            // Close the dropdown whenever the extra filter params change (e.g. the
+            // user picks a different property type) — the open list no longer matches.
+            new MutationObserver(clearSuggestions).observe(picker, {
+                attributes: true,
+                attributeFilter: ['data-extra-params'],
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!picker.contains(event.target)) {
+                    clearSuggestions();
+                }
             });
         });
     })();
