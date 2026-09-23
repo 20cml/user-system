@@ -89,12 +89,12 @@
                     </x-slot>
                 </x-dropdown>
 
-                <a href="{{ route('listings.create') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full font-medium text-xs text-gray-800 hover:bg-gray-50">
+                <button type="button" x-data="" x-on:click="$dispatch('open-modal', 'add-listing')" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full font-medium text-xs text-gray-800 hover:bg-gray-50">
                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     {{ __('Add listing') }}
-                </a>
+                </button>
             </div>
         </div>
     </x-slot>
@@ -118,11 +118,11 @@
 
                     <div class="p-4 space-y-1">
                         <div class="flex items-center justify-between">
-                            <span class="font-semibold text-gray-900">{{ $listing->currency }} {{ number_format($listing->price, 2) }}</span>
+                            <span class="font-semibold text-gray-900">{{ $listing->price !== null ? "{$listing->currency} " . number_format($listing->price, 2) : __('Price not set') }}</span>
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-normal bg-gray-100 text-gray-700">{{ ucfirst($listing->status) }}</span>
                         </div>
                         <p class="text-sm text-gray-700">{{ $listing->address_line }}, {{ $listing->city }}</p>
-                        <p class="text-xs text-gray-500">{{ ucfirst($listing->listing_type) }} &middot; {{ ucfirst($listing->property_type) }}</p>
+                        <p class="text-xs text-gray-500">{{ $listing->listing_type ? ucfirst($listing->listing_type) : __('Not set') }} &middot; {{ $listing->property_type ? ucfirst($listing->property_type) : __('Not set') }}</p>
                         <p class="text-xs text-gray-600">{{ __('Added') }} {{ $listing->created_at->format('M j, Y') }}</p>
                     </div>
                 </a>
@@ -144,4 +144,39 @@
             </div>
         </div>
     </div>
+
+    <x-modal name="add-listing" :show="$errors->any()" focusable>
+        <form method="post" action="{{ route('listings.store') }}" class="p-6 space-y-6">
+            @csrf
+
+            <h2 class="text-sm font-medium text-gray-900">
+                {{ __('Add a Listing') }}
+            </h2>
+
+            @include('listings.partials.address-fields')
+
+            <div>
+                <x-input-label for="area_sqm" :value="__('Size')" class="!text-[12.1px]" />
+                <div class="relative mt-1">
+                    <input type="text" inputmode="decimal" id="area_sqm" name="area_sqm" value="{{ old('area_sqm') }}" class="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 pr-10 !text-[12.1px]">
+                    <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[12.1px] text-gray-400">m&sup2;</span>
+                </div>
+                <x-input-error class="mt-2" :messages="$errors->get('area_sqm')" />
+            </div>
+
+            <div>
+                <x-input-label for="description" :value="__('Description')" class="!text-[12.1px]" />
+                <textarea id="description" name="description" rows="4" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm !text-[12.1px]">{{ old('description') }}</textarea>
+                <x-input-error class="mt-2" :messages="$errors->get('description')" />
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <x-secondary-button type="button" x-on:click="$dispatch('close')">
+                    {{ __('Cancel') }}
+                </x-secondary-button>
+
+                <x-primary-button>{{ __('Add listing') }}</x-primary-button>
+            </div>
+        </form>
+    </x-modal>
 </x-app-layout>

@@ -47,14 +47,6 @@ class ListingController extends Controller
     }
 
     /**
-     * Show the form for adding a new listing.
-     */
-    public function create(): View
-    {
-        return view('listings.create');
-    }
-
-    /**
      * Create a new listing owned by the logged-in agent.
      */
     public function store(ListingRequest $request): RedirectResponse
@@ -71,7 +63,7 @@ class ListingController extends Controller
 
         $listing->leads()->sync($request->safe()->input('lead_ids', []));
 
-        return redirect()->route('listings.index');
+        return redirect()->route('listings.edit', $listing);
     }
 
     /**
@@ -112,7 +104,9 @@ class ListingController extends Controller
 
         $listing->leads()->sync($request->safe()->input('lead_ids', []));
 
-        return redirect()->route('listings.index');
+        $openBranches = array_filter(explode(',', (string) $request->input('open_branches')));
+
+        return redirect()->route('listings.edit', [$listing, 'open' => $openBranches]);
     }
 
     /**

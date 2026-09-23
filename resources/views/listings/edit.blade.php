@@ -12,8 +12,8 @@
                 <div class="max-w-xl">
                     <form method="post" action="{{ route('listings.update', $listing) }}" enctype="multipart/form-data">
                         @php
-                            $listingTypeOptions = ['sale' => __('For sale'), 'rent' => __('For rent')];
-                            $propertyTypeOptions = ['house' => __('House'), 'condo' => __('Condo'), 'land' => __('Land'), 'commercial' => __('Commercial')];
+                            $listingTypeOptions = ['' => __('Not set'), 'sale' => __('For sale'), 'rent' => __('For rent')];
+                            $propertyTypeOptions = ['' => __('Not set'), 'house' => __('House'), 'condo' => __('Condo'), 'land' => __('Land'), 'commercial' => __('Commercial')];
                             $listingStatusOptions = ['available' => __('Available'), 'pending' => __('Pending'), 'closed' => __('Closed')];
                         @endphp
                         <div
@@ -24,15 +24,12 @@
                                 listingTypeLabels: @json($listingTypeOptions),
                                 propertyTypeVal: "{{ old('property_type', $listing->property_type) }}",
                                 propertyTypeOpen: false,
-                                propertyTypeLabels: @json($propertyTypeOptions),
-                                listingStatusVal: "{{ old('status', $listing->status) }}",
-                                listingStatusOpen: false,
-                                listingStatusLabels: @json($listingStatusOptions)
+                                propertyTypeLabels: @json($propertyTypeOptions)
                             }'
                         >
                             <div class="flex items-center gap-0.5">
                                 <span class="text-[12.1px] font-bold text-gray-900">$</span>
-                                <input type="text" inputmode="numeric" id="price" name="price" value="{{ number_format((float) old('price', $listing->price)) }}" required class="price-input font-bold text-gray-900 text-[12.1px] leading-[1.5] border-0 border-b border-transparent hover:border-gray-300 focus:border-gray-400 focus:ring-0 p-0 w-20 bg-transparent">
+                                <input type="text" inputmode="numeric" id="price" name="price" value="{{ old('price', $listing->price) !== null ? number_format((float) old('price', $listing->price)) : '' }}" placeholder="{{ __('Not set') }}" class="price-input font-bold text-gray-900 text-[12.1px] leading-[1.5] border-0 border-b border-transparent hover:border-gray-300 focus:border-gray-400 focus:ring-0 p-0 w-20 bg-transparent">
                             </div>
 
                             <input type="hidden" name="listing_type" :value="listingTypeVal">
@@ -67,31 +64,17 @@
                                 </div>
                             </div>
 
-                            <input type="hidden" name="status" :value="listingStatusVal">
-                            <div class="relative" @click.outside="listingStatusOpen = false">
-                                <button type="button" @click="listingStatusOpen = !listingStatusOpen" class="flex items-center gap-1 text-[12.1px] text-gray-700 hover:text-gray-900 cursor-pointer">
-                                    <span class="font-bold text-gray-900" x-text="listingStatusLabels[listingStatusVal]"></span>
-                                    <svg class="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                                    </svg>
-                                </button>
-
-                                <div x-show="listingStatusOpen" x-transition class="absolute left-0 top-full mt-1 z-20 w-36 bg-white border border-gray-200 rounded-xl shadow-lg py-1" style="display: none;">
-                                    @foreach ($listingStatusOptions as $value => $label)
-                                        <button type="button" @click="listingStatusVal = '{{ $value }}'; listingStatusOpen = false; $nextTick(() => $el.closest('form').submit())" class="block w-full text-left px-3 py-1.5 text-[12.1px] text-gray-700 hover:bg-gray-50" :class="listingStatusVal === '{{ $value }}' ? 'font-semibold text-gray-900' : ''">{{ $label }}</button>
-                                    @endforeach
-                                </div>
-                            </div>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-medium bg-gray-700 text-white">{{ $listingStatusOptions[$listing->status] ?? ucfirst($listing->status) }}</span>
                         </div>
                         <x-input-error class="mb-2" :messages="$errors->get('price')" />
                         <x-input-error class="mb-2" :messages="$errors->get('listing_type')" />
                         <x-input-error class="mb-2" :messages="$errors->get('property_type')" />
-                        <x-input-error class="mb-2" :messages="$errors->get('status')" />
 
                         @csrf
                         @method('patch')
 
-                        <div x-data="{ interestedOpen: false, detailsOpen: false, photoOpen: false }">
+                        <div x-data="{ interestedOpen: {{ in_array('interested', (array) request('open', [])) ? 'true' : 'false' }}, detailsOpen: {{ in_array('details', (array) request('open', [])) ? 'true' : 'false' }}, photoOpen: {{ in_array('photo', (array) request('open', [])) ? 'true' : 'false' }} }">
+                            <input type="hidden" name="open_branches" :value="[photoOpen && 'photo', interestedOpen && 'interested', detailsOpen && 'details'].filter(Boolean).join(',')">
                             {{-- tree trunk: every node hangs off this single vertical line --}}
                             <div class="border-l-2 border-gray-200 ml-2">
                                 {{-- Photo node --}}
@@ -236,6 +219,23 @@
 
             var priceInput = document.getElementById('price');
             var priceLastSaved = priceInput.value;
+            var form = priceInput.closest('form');
+
+            function stripPriceCommas() {
+                priceInput.value = priceInput.value.replace(/\D/g, '');
+            }
+
+            // form.submit() called via JS doesn't fire the form's native 'submit'
+            // event, so a plain submit listener alone won't catch it. The root
+            // dropdowns (listing type, property type, status) all auto-save by
+            // calling form.submit() directly — overriding the method itself is
+            // the only way to guarantee the price field is cleaned up no matter
+            // which trigger fires the submit.
+            var nativeSubmit = form.submit.bind(form);
+            form.submit = function () {
+                stripPriceCommas();
+                nativeSubmit();
+            };
 
             priceInput.addEventListener('input', function () {
                 var digits = priceInput.value.replace(/\D/g, '');
@@ -254,15 +254,10 @@
                 }
 
                 priceLastSaved = priceInput.value;
-                // form.submit() called via JS doesn't fire the form's 'submit' event,
-                // so the comma-stripping below has to happen here, not just there.
-                priceInput.value = priceInput.value.replace(/\D/g, '');
-                priceInput.closest('form').submit();
+                form.submit();
             });
 
-            priceInput.closest('form').addEventListener('submit', function () {
-                priceInput.value = priceInput.value.replace(/\D/g, '');
-            });
+            form.addEventListener('submit', stripPriceCommas);
         })();
     </script>
 </x-app-layout>

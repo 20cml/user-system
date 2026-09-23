@@ -33,7 +33,6 @@ Route::middleware(['auth', 'no-cache'])->group(function () {
 
 Route::middleware(['auth', 'verified', 'profile.complete', 'no-cache'])->group(function () {
     Route::get('/listings', [ListingController::class, 'index'])->name('listings.index');
-    Route::get('/listings/create', [ListingController::class, 'create'])->name('listings.create');
     Route::post('/listings', [ListingController::class, 'store'])->name('listings.store');
     Route::get('/listings/{listing}/edit', [ListingController::class, 'edit'])->name('listings.edit');
     Route::patch('/listings/{listing}', [ListingController::class, 'update'])->name('listings.update');

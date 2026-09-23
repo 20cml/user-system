@@ -36,7 +36,8 @@ class ListingTest extends TestCase
 
         $response = $this->actingAs($user)->post('/listings', $this->listingData());
 
-        $response->assertRedirect('/listings');
+        $listing = Listing::first();
+        $response->assertRedirect("/listings/{$listing->id}/edit");
         $this->assertDatabaseHas('listings', [
             'user_id' => $user->id,
             'address_line' => '123 Main St',
