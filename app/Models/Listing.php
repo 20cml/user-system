@@ -35,4 +35,29 @@ class Listing extends Model
     {
         return $this->belongsToMany(Lead::class, 'lead_listing');
     }
+
+    /**
+     * Recompute this listing's status from the funnel status of its linked
+     * leads: 'closed' once any linked lead has closed (whichever lead closes
+     * first locks the listing there — once closed, this never re-evaluates,
+     * even if that lead's status later regresses), 'pending' once any linked
+     * lead has completed its 'under_contract' stage, otherwise 'available'.
+     * No-ops once the listing is already closed.
+     */
+    public function syncStatusFromLeads(): void
+    {
+        if ($this->status === 'closed') {
+            return;
+        }
+
+        $leadStatuses = $this->leads()->pluck('status');
+
+        $this->status = match (true) {
+            $leadStatuses->contains('closed') => 'closed',
+            $leadStatuses->contains('under_contract') => 'pending',
+            default => 'available',
+        };
+
+        $this->save();
+    }
 }

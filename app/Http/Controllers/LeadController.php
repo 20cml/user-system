@@ -16,11 +16,11 @@ class LeadController extends Controller
     use AuthorizesRequests;
 
     /**
-     * List the logged-in agent's own leads, newest first.
+     * List the logged-in agent's own leads, alphabetically by name.
      */
     public function index(Request $request): View|JsonResponse
     {
-        $leads = $request->user()->leads()->latest();
+        $leads = $request->user()->leads()->orderBy('first_name')->orderBy('last_name');
 
         if ($statuses = $request->query('status')) {
             $leads->whereIn('status', (array) $statuses);
@@ -63,7 +63,7 @@ class LeadController extends Controller
 
         $lead->listings()->sync($request->safe()->input('listing_ids', []));
 
-        return redirect()->route('leads.index');
+        return redirect()->route('leads.edit', $lead);
     }
 
     /**
@@ -87,6 +87,7 @@ class LeadController extends Controller
 
         $lead->update($request->safe()->except(['listing_ids', 'documents']));
         $lead->listings()->sync($request->safe()->input('listing_ids', []));
+        $lead->listings()->get()->each->syncStatusFromLeads();
 
         $submittedDocuments = $request->input('documents', []);
         $allDocumentKeys = collect(Lead::DOCUMENTS_BY_TYPE[$lead->type][$lead->property_type] ?? [])
@@ -102,7 +103,9 @@ class LeadController extends Controller
 
         $lead->advanceStatusFromDocuments();
 
-        return redirect()->route('leads.edit', [$lead, 'open' => $request->input('section')]);
+        $openBranches = array_filter(explode(',', (string) $request->input('open_branches')));
+
+        return redirect()->route('leads.edit', [$lead, 'open' => $openBranches]);
     }
 
     /**

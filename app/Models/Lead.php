@@ -127,15 +127,57 @@ class Lead extends Model
     }
 
     /**
+     * Whether every stage from 'new' up to and including $targetStage has a
+     * fully-checked document checklist.
+     */
+    private function documentsCompleteThroughStage(string $targetStage): bool
+    {
+        $stages = self::PIPELINE_STAGES_BY_TYPE[$this->type] ?? [];
+
+        foreach ($stages as $stage) {
+            $checklist = $this->documentChecklistForStage($stage);
+
+            if (collect($checklist)->contains(fn ($doc) => ! $doc['checked'])) {
+                return false;
+            }
+
+            if ($stage === $targetStage) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether this lead is ready to advance to 'offer' on its documents
+     * alone, but is being held at 'qualified' because it isn't linked to
+     * exactly one listing yet. An offer names a specific property, so the
+     * agent needs to narrow "Interested Leads" down to that one listing
+     * before the funnel can move past it.
+     */
+    public function needsListingNarrowedForOffer(): bool
+    {
+        if (! $this->hasDocumentChecklist()) {
+            return false;
+        }
+
+        return $this->documentsCompleteThroughStage('offer') && $this->listings()->count() !== 1;
+    }
+
+    /**
      * Recompute this lead's status from its document checklist: the furthest
      * pipeline stage (PIPELINE_STAGES_BY_TYPE) that's fully checked, walking
      * from 'new' and stopping at the first incomplete stage — so a later
      * stage being complete doesn't count if an earlier one isn't. A stage
      * with no documents defined (like 'new') counts as satisfied
      * automatically. Moves the status up or down to match, so unchecking a
-     * document can send it back a stage. No-ops when the lead is Lost, its
-     * type has no pipeline defined, or it has no checklist defined for its
-     * type × property type.
+     * document can send it back a stage. The 'offer' stage additionally
+     * requires exactly one linked listing — an offer names a specific
+     * property, so 0 or 2+ candidates holds the lead at 'qualified' until
+     * the agent narrows "Interested Leads" down to the one it's for. No-ops
+     * when the lead is Lost, its type has no pipeline defined, or it has no
+     * checklist defined for its type × property type.
      */
     public function advanceStatusFromDocuments(): void
     {
@@ -154,10 +196,16 @@ class Lead extends Model
                 break;
             }
 
+            if ($stage === 'offer' && $this->listings()->count() !== 1) {
+                break;
+            }
+
             $furthestComplete = $stage;
         }
 
         $this->status = $furthestComplete;
         $this->save();
+
+        $this->listings()->get()->each->syncStatusFromLeads();
     }
 }

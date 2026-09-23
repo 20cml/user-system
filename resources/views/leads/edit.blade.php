@@ -71,7 +71,7 @@
                     </div>
                 </div>
 
-                <div :class="(personalOpen || listingsOpen || documentsOpen) ? 'max-w-3xl' : 'max-w-sm'" class="transition-[max-width] duration-300" x-data="{ personalOpen: {{ request('open') === 'personal' ? 'true' : 'false' }}, listingsOpen: {{ request('open') === 'listings' ? 'true' : 'false' }}, documentsOpen: {{ request('open') === 'documents' ? 'true' : 'false' }} }">
+                <div :class="(personalOpen || listingsOpen || documentsOpen) ? 'max-w-3xl' : 'max-w-sm'" class="transition-[max-width] duration-300" x-data="{ personalOpen: {{ in_array('personal', (array) request('open', [])) ? 'true' : 'false' }}, listingsOpen: {{ (in_array('listings', (array) request('open', [])) || $lead->needsListingNarrowedForOffer()) ? 'true' : 'false' }}, documentsOpen: {{ in_array('documents', (array) request('open', [])) ? 'true' : 'false' }} }">
 
                     {{-- root node: type/status --}}
                     <div class="flex items-center justify-start gap-4 pb-4 mb-4 border-b border-gray-200">
@@ -103,7 +103,7 @@
                                 </div>
                             </div>
 
-                            <span class="text-[12.1px] font-bold text-gray-900">{{ $statusOptions[$lead->status] ?? ucfirst($lead->status) }}</span>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-medium bg-gray-700 text-white">{{ $statusOptions[$lead->status] ?? ucfirst($lead->status) }}</span>
                         </div>
                     </div>
                     <x-input-error class="mb-2" :messages="$errors->get('type')" />
@@ -114,6 +114,7 @@
                         <form id="lead-details-form" method="post" action="{{ route('leads.update', $lead) }}">
                             @csrf
                             @method('patch')
+                            <input type="hidden" name="open_branches" :value="[personalOpen && 'personal', listingsOpen && 'listings', documentsOpen && 'documents'].filter(Boolean).join(',')">
 
                             {{-- Personal Info node --}}
                             <div class="pl-6 -ml-px border-l-2 border-transparent py-3">
@@ -154,7 +155,7 @@
                                                 <x-input-error class="mt-2" :messages="$errors->get('email')" />
                                             </div>
 
-                                            <x-primary-button name="section" value="personal">{{ __('Save') }}</x-primary-button>
+                                            <x-primary-button>{{ __('Save') }}</x-primary-button>
                                         </div>
                                     </div>
                                 </div>
@@ -204,7 +205,7 @@
                                                     <x-input-error class="mt-2" :messages="$errors->get('listing_ids')" />
 
                                                     <div class="mt-4">
-                                                        <x-primary-button name="section" value="listings">{{ __('Save') }}</x-primary-button>
+                                                        <x-primary-button>{{ __('Save') }}</x-primary-button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -257,7 +258,7 @@
                                                 @endforeach
 
                                                 <div class="pt-2 pb-2">
-                                                    <x-primary-button name="section" value="documents">{{ __('Save') }}</x-primary-button>
+                                                    <x-primary-button>{{ __('Save') }}</x-primary-button>
                                                 </div>
                                             </div>
                                         </div>
@@ -297,4 +298,26 @@
                 </div>
             </div>
         </div>
+
+        <x-modal name="narrow-listing-warning" :show="$lead->needsListingNarrowedForOffer()" focusable>
+            <div class="p-6">
+                <h2 class="text-sm font-medium text-gray-900">
+                    {{ __('This offer needs one listing') }}
+                </h2>
+
+                <p class="mt-2 text-[12.1px] text-gray-600">
+                    @if ($lead->listings->isEmpty())
+                        {{ __('This lead is ready to move to Offer — link the listing this offer is for.') }}
+                    @else
+                        {{ __('This lead has :count listings linked — remove all but the one this offer is for to move it to Offer.', ['count' => $lead->listings->count()]) }}
+                    @endif
+                </p>
+
+                <div class="mt-6 flex justify-end">
+                    <x-primary-button x-on:click="$dispatch('close')">
+                        {{ __('Got it') }}
+                    </x-primary-button>
+                </div>
+            </div>
+        </x-modal>
 </x-app-layout>

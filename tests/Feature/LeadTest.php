@@ -29,7 +29,8 @@ class LeadTest extends TestCase
 
         $response = $this->actingAs($user)->post('/leads', $this->leadData());
 
-        $response->assertRedirect('/leads');
+        $lead = Lead::first();
+        $response->assertRedirect("/leads/{$lead->id}/edit");
         $this->assertDatabaseHas('leads', [
             'user_id' => $user->id,
             'first_name' => 'Jane',
@@ -164,9 +165,11 @@ class LeadTest extends TestCase
     {
         $user = User::factory()->create();
         $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'new']);
+        $listing = Listing::factory()->for($user)->create();
 
         $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
             'property_type' => 'condo',
+            'listing_ids' => [$listing->id],
             'documents' => [
                 'reco_information_guide' => '1',
                 'buyer_representation_agreement' => '1',
@@ -232,6 +235,175 @@ class LeadTest extends TestCase
         ]));
 
         $this->assertSame('lost', $lead->fresh()->status);
+    }
+
+    public function test_status_does_not_advance_to_offer_without_a_linked_listing(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'qualified']);
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'documents' => $this->offerDocuments(),
+        ]));
+
+        $this->assertSame('qualified', $lead->fresh()->status);
+        $this->assertTrue($lead->fresh()->needsListingNarrowedForOffer());
+    }
+
+    public function test_status_does_not_advance_to_offer_with_multiple_linked_listings(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'qualified']);
+        $listingA = Listing::factory()->for($user)->create();
+        $listingB = Listing::factory()->for($user)->create();
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'listing_ids' => [$listingA->id, $listingB->id],
+            'documents' => $this->offerDocuments(),
+        ]));
+
+        $this->assertSame('qualified', $lead->fresh()->status);
+        $this->assertTrue($lead->fresh()->needsListingNarrowedForOffer());
+    }
+
+    public function test_status_advances_to_offer_once_narrowed_to_one_listing(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'qualified']);
+        $listing = Listing::factory()->for($user)->create();
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'listing_ids' => [$listing->id],
+            'documents' => $this->offerDocuments(),
+        ]));
+
+        $this->assertSame('offer', $lead->fresh()->status);
+        $this->assertFalse($lead->fresh()->needsListingNarrowedForOffer());
+    }
+
+    public function test_the_narrow_listing_warning_is_shown_on_the_edit_page(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'qualified']);
+        $listingA = Listing::factory()->for($user)->create();
+        $listingB = Listing::factory()->for($user)->create();
+        $lead->listings()->attach([$listingA->id, $listingB->id]);
+        foreach ($this->offerDocuments() as $key => $value) {
+            $lead->documents()->create(['key' => $key, 'checked' => true]);
+        }
+
+        $response = $this->actingAs($user)->get("/leads/{$lead->id}/edit?open=listings");
+
+        $response->assertSee('remove all but the one this offer is for', false);
+    }
+
+    private function offerDocuments(): array
+    {
+        return [
+            'reco_information_guide' => '1',
+            'buyer_representation_agreement' => '1',
+            'disclosures' => '1',
+            'agreement_of_purchase_and_sale' => '1',
+            'schedules_addendums' => '1',
+            'deposit_receipt' => '1',
+            'proof_of_deposit' => '1',
+        ];
+    }
+
+    private function underContractDocuments(): array
+    {
+        return [
+            ...$this->offerDocuments(),
+            'amendments' => '1',
+            'waivers' => '1',
+            'notices_of_fulfillment' => '1',
+            'status_certificate' => '1',
+        ];
+    }
+
+    private function closedDocuments(): array
+    {
+        return [
+            ...$this->underContractDocuments(),
+            'final_agreement_of_purchase_and_sale' => '1',
+            'final_amendments' => '1',
+            'trade_record_sheet' => '1',
+        ];
+    }
+
+    public function test_linked_listing_becomes_pending_when_a_lead_completes_under_contract(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'offer']);
+        $listing = Listing::factory()->for($user)->create(['status' => 'available']);
+        $lead->listings()->attach($listing);
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'listing_ids' => [$listing->id],
+            'documents' => $this->underContractDocuments(),
+        ]));
+
+        $this->assertSame('under_contract', $lead->fresh()->status);
+        $this->assertSame('pending', $listing->fresh()->status);
+    }
+
+    public function test_linked_listing_becomes_closed_when_a_lead_completes_the_funnel(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'under_contract']);
+        $listing = Listing::factory()->for($user)->create(['status' => 'pending']);
+        $lead->listings()->attach($listing);
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'listing_ids' => [$listing->id],
+            'documents' => $this->closedDocuments(),
+        ]));
+
+        $this->assertSame('closed', $lead->fresh()->status);
+        $this->assertSame('closed', $listing->fresh()->status);
+    }
+
+    public function test_a_closed_listing_stays_closed_even_if_the_closing_leads_documents_regress(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'closed']);
+        $listing = Listing::factory()->for($user)->create(['status' => 'closed']);
+        $lead->listings()->attach($listing);
+        foreach ($this->closedDocuments() as $key => $value) {
+            $lead->documents()->create(['key' => $key, 'checked' => true]);
+        }
+
+        $this->actingAs($user)->patch("/leads/{$lead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'listing_ids' => [$listing->id],
+            'documents' => $this->underContractDocuments(),
+        ]));
+
+        $this->assertSame('under_contract', $lead->fresh()->status);
+        $this->assertSame('closed', $listing->fresh()->status);
+    }
+
+    public function test_first_lead_to_close_locks_the_listing_even_with_other_interested_leads(): void
+    {
+        $user = User::factory()->create();
+        $closingLead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'under_contract']);
+        $otherLead = Lead::factory()->for($user)->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'new']);
+        $listing = Listing::factory()->for($user)->create(['status' => 'pending']);
+        $closingLead->listings()->attach($listing);
+        $otherLead->listings()->attach($listing);
+
+        $this->actingAs($user)->patch("/leads/{$closingLead->id}", $this->leadData([
+            'property_type' => 'condo',
+            'listing_ids' => [$listing->id],
+            'documents' => $this->closedDocuments(),
+        ]));
+
+        $this->assertSame('closed', $listing->fresh()->status);
     }
 
     public function test_a_non_buyer_lead_has_no_document_checklist(): void
