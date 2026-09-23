@@ -40,7 +40,9 @@ class ProfileController extends Controller
 
         $user->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        $openBranches = array_filter(explode(',', (string) $request->input('open_branches')));
+
+        return Redirect::route('profile.edit', ['open' => $openBranches])->with('status', 'profile-updated');
     }
 
     /**

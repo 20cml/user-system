@@ -24,6 +24,8 @@ class PasswordController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        return back()->with('status', 'password-updated');
+        $openBranches = array_filter(explode(',', (string) $request->input('open_branches')));
+
+        return redirect()->route('profile.edit', ['open' => $openBranches])->with('status', 'password-updated');
     }
 }
