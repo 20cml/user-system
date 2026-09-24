@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Lead;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,6 +22,7 @@ class ListingFactory extends Factory
 
         return [
             'user_id' => User::factory(),
+            'owner_lead_id' => Lead::factory(),
             'source' => 'manual',
             'listing_type' => fake()->randomElement(['sale', 'rent']),
             'property_type' => fake()->randomElement(['house', 'condo', 'land', 'commercial']),

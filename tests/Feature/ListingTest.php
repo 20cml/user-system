@@ -27,6 +27,8 @@ class ListingTest extends TestCase
             'property_type' => 'house',
             'area_sqm' => 150,
             'description' => 'A lovely home.',
+            'owner_first_name' => 'Owen',
+            'owner_last_name' => 'Seller',
         ], $overrides);
     }
 
@@ -49,6 +51,86 @@ class ListingTest extends TestCase
         $index = $this->actingAs($user)->get('/listings');
         $index->assertOk();
         $index->assertSee('123 Main St');
+    }
+
+    public function test_creating_a_sale_listing_creates_a_seller_lead_as_its_owner(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post('/listings', $this->listingData([
+            'listing_type' => 'sale',
+            'property_type' => 'condo',
+            'owner_first_name' => 'Sonia',
+            'owner_last_name' => 'Smith',
+            'owner_phone' => '555-9999',
+            'owner_email' => 'sonia@example.com',
+        ]));
+
+        $listing = Listing::first();
+        $owner = $listing->owner;
+
+        $this->assertSame('Sonia', $owner->first_name);
+        $this->assertSame('Smith', $owner->last_name);
+        $this->assertSame('555-9999', $owner->phone);
+        $this->assertSame('sonia@example.com', $owner->email);
+        $this->assertSame('seller', $owner->type);
+        $this->assertSame('condo', $owner->property_type);
+        $this->assertSame('new', $owner->status);
+    }
+
+    public function test_creating_a_rent_listing_creates_a_landlord_lead_as_its_owner(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post('/listings', $this->listingData([
+            'listing_type' => 'rent',
+            'owner_first_name' => 'Larry',
+        ]));
+
+        $listing = Listing::first();
+
+        $this->assertSame('landlord', $listing->owner->type);
+    }
+
+    public function test_owner_first_name_is_required_to_create_a_listing(): void
+    {
+        $user = User::factory()->create();
+
+        $data = $this->listingData();
+        unset($data['owner_first_name']);
+
+        $response = $this->actingAs($user)->post('/listings', $data);
+
+        $response->assertSessionHasErrors('owner_first_name');
+        $this->assertDatabaseCount('listings', 0);
+    }
+
+    public function test_listing_type_and_property_type_are_required_to_create_a_listing(): void
+    {
+        $user = User::factory()->create();
+
+        $data = $this->listingData();
+        unset($data['listing_type'], $data['property_type']);
+
+        $response = $this->actingAs($user)->post('/listings', $data);
+
+        $response->assertSessionHasErrors(['listing_type', 'property_type']);
+        $this->assertDatabaseCount('listings', 0);
+    }
+
+    public function test_the_owner_is_shown_on_the_listing_edit_page(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post('/listings', $this->listingData([
+            'owner_first_name' => 'Ozzy',
+            'owner_last_name' => 'Owner',
+        ]));
+
+        $listing = Listing::first();
+
+        $response = $this->actingAs($user)->get("/listings/{$listing->id}/edit?open=owner");
+        $response->assertSee('Ozzy Owner');
     }
 
     public function test_currency_comes_from_the_agents_own_country_not_the_listings_country(): void
@@ -134,6 +216,17 @@ class ListingTest extends TestCase
         $response->assertRedirect('/listings');
         $this->assertDatabaseMissing('listings', ['id' => $listing->id]);
         Storage::disk('public')->assertMissing('listing-photos/to-delete.jpg');
+    }
+
+    public function test_deleting_a_listing_also_deletes_its_owner_lead(): void
+    {
+        $user = User::factory()->create();
+        $owner = Lead::factory()->for($user)->create(['type' => 'seller']);
+        $listing = Listing::factory()->for($user)->create(['owner_lead_id' => $owner->id]);
+
+        $this->actingAs($user)->delete("/listings/{$listing->id}");
+
+        $this->assertDatabaseMissing('leads', ['id' => $owner->id]);
     }
 
     public function test_uploading_a_photo_on_create_succeeds_and_it_displays(): void
@@ -262,5 +355,84 @@ class ListingTest extends TestCase
 
         $response->assertSessionHasErrors('lead_ids.0');
         $this->assertDatabaseCount('listings', 0);
+    }
+
+    public function test_the_closed_leads_chip_is_highlighted_among_a_closed_listings_interested_leads(): void
+    {
+        $user = User::factory()->create();
+        $closingLead = Lead::factory()->for($user)->create(['first_name' => 'Pitu', 'last_name' => '', 'status' => 'closed']);
+        $otherLead = Lead::factory()->for($user)->create(['first_name' => 'Bruno', 'last_name' => '', 'status' => 'new']);
+        $listing = Listing::factory()->for($user)->create(['status' => 'closed']);
+        $listing->leads()->attach([$closingLead->id, $otherLead->id]);
+
+        $this->assertTrue($listing->leadDrivesCurrentStatus($closingLead));
+        $this->assertFalse($listing->leadDrivesCurrentStatus($otherLead));
+    }
+
+    public function test_the_under_contract_leads_chip_is_highlighted_among_a_pending_listings_interested_leads(): void
+    {
+        $user = User::factory()->create();
+        $activeLead = Lead::factory()->for($user)->create(['status' => 'under_contract']);
+        $otherLead = Lead::factory()->for($user)->create(['status' => 'new']);
+        $listing = Listing::factory()->for($user)->create(['status' => 'pending']);
+        $listing->leads()->attach([$activeLead->id, $otherLead->id]);
+
+        $this->assertTrue($listing->leadDrivesCurrentStatus($activeLead));
+        $this->assertFalse($listing->leadDrivesCurrentStatus($otherLead));
+    }
+
+    public function test_no_lead_is_highlighted_on_an_available_listing(): void
+    {
+        $user = User::factory()->create();
+        $lead = Lead::factory()->for($user)->create(['status' => 'new']);
+        $listing = Listing::factory()->for($user)->create(['status' => 'available']);
+        $listing->leads()->attach($lead->id);
+
+        $this->assertFalse($listing->leadDrivesCurrentStatus($lead));
+    }
+
+    public function test_the_listing_edit_page_shows_the_owners_personal_info_and_documents(): void
+    {
+        $user = User::factory()->create();
+        $owner = Lead::factory()->for($user)->create(['type' => 'seller', 'property_type' => 'condo', 'first_name' => 'Sonia', 'last_name' => 'Smith']);
+        $listing = Listing::factory()->for($user)->create(['owner_lead_id' => $owner->id, 'listing_type' => 'sale']);
+
+        $response = $this->actingAs($user)->get("/listings/{$listing->id}/edit?open=owner,owner-profile,personal,documents");
+
+        $response->assertOk();
+        $response->assertSee('Sonia Smith');
+        $response->assertSee('RECO Information Guide');
+    }
+
+    public function test_editing_the_owners_personal_info_from_the_listing_page_redirects_back_to_the_listing(): void
+    {
+        $user = User::factory()->create();
+        $owner = Lead::factory()->for($user)->create(['type' => 'seller', 'property_type' => 'condo', 'first_name' => 'Sonia']);
+        $listing = Listing::factory()->for($user)->create(['owner_lead_id' => $owner->id, 'listing_type' => 'sale']);
+
+        $response = $this->actingAs($user)->patch("/leads/{$owner->id}", [
+            'first_name' => 'Sonia Updated',
+            'type' => 'seller',
+        ]);
+
+        $response->assertRedirect("/listings/{$listing->id}/edit");
+        $this->assertSame('Sonia Updated', $owner->fresh()->first_name);
+    }
+
+    public function test_checking_the_owners_documents_from_the_listing_page_advances_their_status(): void
+    {
+        $user = User::factory()->create();
+        $owner = Lead::factory()->for($user)->create(['type' => 'seller', 'property_type' => 'condo', 'status' => 'new']);
+        Listing::factory()->for($user)->create(['owner_lead_id' => $owner->id, 'listing_type' => 'sale']);
+
+        $this->actingAs($user)->patch("/leads/{$owner->id}", [
+            'type' => 'seller',
+            'documents' => [
+                'reco_information_guide' => '1',
+                'id_client_verification' => '1',
+            ],
+        ]);
+
+        $this->assertSame('new', $owner->fresh()->status);
     }
 }

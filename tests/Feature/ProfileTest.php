@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Lead;
+use App\Models\Listing;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -92,6 +94,20 @@ class ProfileTest extends TestCase
 
         $this->assertGuest();
         $this->assertNull($user->fresh());
+    }
+
+    public function test_deleting_an_account_deletes_its_leads_and_listings_and_their_owners(): void
+    {
+        $user = User::factory()->create();
+        $buyer = Lead::factory()->for($user)->create(['type' => 'buyer']);
+        $listing = Listing::factory()->for($user)->create();
+        $owner = $listing->owner;
+
+        $this->actingAs($user)->delete('/profile', ['password' => 'password']);
+
+        $this->assertNull($buyer->fresh());
+        $this->assertNull($listing->fresh());
+        $this->assertNull($owner->fresh());
     }
 
     public function test_correct_password_must_be_provided_to_delete_account(): void

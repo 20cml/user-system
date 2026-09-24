@@ -46,4 +46,17 @@ class ListingSearchTest extends TestCase
         $response->assertOk();
         $response->assertJson([]);
     }
+
+    public function test_filtering_by_listing_type_excludes_listings_of_the_other_type(): void
+    {
+        $user = User::factory()->create();
+        $forRent = Listing::factory()->for($user)->create(['listing_type' => 'rent', 'address_line' => '1 Rent St']);
+        Listing::factory()->for($user)->create(['listing_type' => 'sale', 'address_line' => '2 Sale St']);
+
+        $response = $this->actingAs($user)->getJson('/api/listings-search?query=St&listing_type=rent');
+
+        $response->assertOk();
+        $response->assertJsonCount(1);
+        $response->assertJsonFragment(['id' => $forRent->id]);
+    }
 }

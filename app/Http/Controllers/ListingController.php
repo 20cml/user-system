@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ListingRequest;
 use App\Models\Listing;
+use App\Models\Lead;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,14 +48,27 @@ class ListingController extends Controller
     }
 
     /**
-     * Create a new listing owned by the logged-in agent.
+     * Create a new listing owned by the logged-in agent, along with the
+     * lead selling or renting it out — a 'sale' listing gets a new Seller
+     * lead, a 'rent' listing gets a new Landlord lead.
      */
     public function store(ListingRequest $request): RedirectResponse
     {
         $user = $request->user();
 
+        $owner = $user->leads()->create([
+            'first_name' => $request->safe()->input('owner_first_name'),
+            'last_name' => $request->safe()->input('owner_last_name'),
+            'phone' => $request->safe()->input('owner_phone'),
+            'email' => $request->safe()->input('owner_email'),
+            'type' => $request->input('listing_type') === 'rent' ? 'landlord' : 'seller',
+            'property_type' => $request->input('property_type'),
+            'status' => 'new',
+        ]);
+
         $listing = $user->listings()->create([
-            ...$request->safe()->except(['photo', 'remove_photo', 'status', 'lead_ids']),
+            ...$request->safe()->except(['photo', 'remove_photo', 'status', 'lead_ids', 'owner_first_name', 'owner_last_name', 'owner_phone', 'owner_email']),
+            'owner_lead_id' => $owner->id,
             'status' => 'available',
             'source' => 'manual',
             'currency' => $user->country === 'CA' ? 'CAD' : 'USD',
@@ -74,7 +88,7 @@ class ListingController extends Controller
         $this->authorize('update', $listing);
 
         return view('listings.edit', [
-            'listing' => $listing->load('leads'),
+            'listing' => $listing->load('leads', 'owner'),
         ]);
     }
 
@@ -116,11 +130,7 @@ class ListingController extends Controller
     {
         $this->authorize('delete', $listing);
 
-        if ($listing->photo_path) {
-            Storage::disk('public')->delete($listing->photo_path);
-        }
-
-        $listing->delete();
+        $listing->deleteWithOwner();
 
         return redirect()->route('listings.index');
     }

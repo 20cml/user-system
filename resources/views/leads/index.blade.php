@@ -23,7 +23,7 @@
                             <input type="text" name="name" id="lead-filter-name" value="{{ request('name') }}" placeholder="{{ __("Type lead's name...") }}" autocomplete="off" class="block w-full border-0 border-b border-gray-200 focus:border-gray-300 focus:ring-0 px-0 pb-2 text-[13px] placeholder-gray-400">
 
                             <p class="pt-3 pb-1 text-xs font-medium text-gray-400">{{ __('Lead Type') }}</p>
-                            @foreach (['buyer' => 'Buyer', 'seller' => 'Seller', 'investor' => 'Investor', 'renter' => 'Renter', 'landlord' => 'Landlord'] as $value => $label)
+                            @foreach (['buyer' => 'Buyer', 'renter' => 'Renter'] as $value => $label)
                                 <label class="flex items-center justify-between py-1.5 text-[13px] text-gray-900">
                                     {{ __($label) }}
                                     <input type="checkbox" name="type[]" value="{{ $value }}" class="lead-filter-field h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-0" @checked(in_array($value, (array) request('type', [])))>
@@ -102,7 +102,7 @@
     </script>
 
     <x-modal name="add-lead" :show="$errors->any()" focusable>
-        <form method="post" action="{{ route('leads.store') }}" class="p-6 space-y-6">
+        <form method="post" action="{{ route('leads.store') }}" class="p-6 space-y-6" x-data="{ type: '{{ old('type') }}' }">
             @csrf
 
             <h2 class="text-sm font-medium text-gray-900">
@@ -110,15 +110,12 @@
             </h2>
 
             <div>
-                <x-input-label for="type" :value="__('Lead Type')" class="!text-[12.1px]" />
-                <select id="type" name="type" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm !text-[12.1px]">
-                    <option value="">{{ __('Not set') }}</option>
-                    <option value="buyer" @selected(old('type') === 'buyer')>{{ __('Buyer') }}</option>
-                    <option value="seller" @selected(old('type') === 'seller')>{{ __('Seller') }}</option>
-                    <option value="investor" @selected(old('type') === 'investor')>{{ __('Investor') }}</option>
-                    <option value="renter" @selected(old('type') === 'renter')>{{ __('Renter') }}</option>
-                    <option value="landlord" @selected(old('type') === 'landlord')>{{ __('Landlord') }}</option>
-                </select>
+                <x-input-label :value="__('Buying or renting?')" class="!text-[12.1px]" />
+                <input type="hidden" name="type" :value="type">
+                <div class="mt-1 flex items-center gap-2">
+                    <button type="button" @click="type = 'buyer'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="type === 'buyer' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Buyer') }}</button>
+                    <button type="button" @click="type = 'renter'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="type === 'renter' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Renter') }}</button>
+                </div>
                 <x-input-error class="mt-2" :messages="$errors->get('type')" />
             </div>
 

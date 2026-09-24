@@ -1,16 +1,17 @@
 @php
     $selected = $selected ?? [];
+    $form = $form ?? null;
 @endphp
 
-<div class="tag-picker relative" data-search-url="{{ $searchUrl }}" data-field-name="{{ $name }}" @if (isset($extraParamsExpr)) :data-extra-params="{{ $extraParamsExpr }}" @endif>
+<div class="tag-picker relative" data-search-url="{{ $searchUrl }}" data-field-name="{{ $name }}" @if ($form) data-form="{{ $form }}" @endif @if (isset($extraParamsExpr)) :data-extra-params="{{ $extraParamsExpr }}" @endif>
     <input type="text" class="tag-picker-input mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm !text-[12.1px]" placeholder="{{ $placeholder }}" autocomplete="off">
     <div class="tag-picker-suggestions absolute z-10 mt-1 w-full text-[12.1px] max-h-48 overflow-y-auto rounded-md bg-white shadow-lg empty:hidden"></div>
     <div class="tag-picker-chips mt-2 flex flex-wrap gap-2">
         @foreach ($selected as $item)
-            <span class="tag-picker-chip inline-flex items-center gap-1 bg-gray-100 rounded-full pl-3 pr-2 py-1 text-[12.1px]">
+            <span class="tag-picker-chip inline-flex items-center gap-1 {{ ($item['variant'] ?? null) === 'success' ? 'bg-green-100 text-green-800' : 'bg-gray-100' }} rounded-full pl-3 pr-2 py-1 text-[12.1px]">
                 {{ $item['label'] }}
                 <button type="button" class="tag-picker-remove h-5 w-5 flex items-center justify-center text-gray-500 hover:text-red-600" aria-label="{{ __('Remove :label', ['label' => $item['label']]) }}">&times;</button>
-                <input type="hidden" name="{{ $name }}[]" value="{{ $item['id'] }}">
+                <input type="hidden" @if ($form) form="{{ $form }}" @endif name="{{ $name }}[]" value="{{ $item['id'] }}">
             </span>
         @endforeach
     </div>
@@ -29,6 +30,7 @@
             var chipsBox = picker.querySelector('.tag-picker-chips');
             var searchUrl = picker.dataset.searchUrl;
             var fieldName = picker.dataset.fieldName;
+            var formId = picker.dataset.form;
             var debounceTimer = null;
 
             function selectedIds() {
@@ -65,6 +67,9 @@
 
                 var hidden = document.createElement('input');
                 hidden.type = 'hidden';
+                if (formId) {
+                    hidden.setAttribute('form', formId);
+                }
                 hidden.name = fieldName + '[]';
                 hidden.value = item.id;
                 chip.appendChild(hidden);

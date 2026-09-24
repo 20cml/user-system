@@ -6,20 +6,33 @@ use App\Http\Controllers\Api\ListingSearchController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ListingController;
 use App\Http\Controllers\ProfileController;
+use App\Models\Lead;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    $statuses = ['new', 'contacted', 'qualified', 'offer', 'under_contract', 'closed'];
+Route::get('/dashboard', function (Request $request) {
+    $pipeline = in_array($request->query('pipeline'), ['buyer', 'seller', 'renter', 'landlord'])
+        ? $request->query('pipeline')
+        : session('dashboard_pipeline', 'buyer');
 
-    $leads = auth()->user()->leads()->latest()->get()->groupBy('status');
+    session(['dashboard_pipeline' => $pipeline]);
 
-    $leadsByStatus = collect($statuses)->mapWithKeys(fn ($status) => [$status => $leads->get($status, collect())]);
+    $stages = Lead::PIPELINE_STAGES_BY_TYPE[$pipeline];
+    $stageLabels = Lead::PIPELINE_STAGE_LABELS[$pipeline];
 
-    return view('dashboard', ['leadsByStatus' => $leadsByStatus]);
+    $leads = auth()->user()->leads()->where('type', $pipeline)->latest()->get()->groupBy('status');
+
+    $leadsByStatus = collect($stages)->mapWithKeys(fn ($status) => [$status => $leads->get($status, collect())]);
+
+    return view('dashboard', [
+        'pipeline' => $pipeline,
+        'stageLabels' => $stageLabels,
+        'leadsByStatus' => $leadsByStatus,
+    ]);
 })->middleware(['auth', 'verified', 'profile.complete', 'no-cache'])->name('dashboard');
 
 Route::middleware(['auth', 'no-cache'])->group(function () {

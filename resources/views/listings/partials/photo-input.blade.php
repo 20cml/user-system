@@ -1,4 +1,6 @@
-<input id="photo" name="photo" type="file" accept="image/*" class="mt-1 block w-full text-[12.1px] text-gray-600" />
+@php $form = $form ?? null; @endphp
+
+<input id="photo" @if ($form) form="{{ $form }}" @endif name="photo" type="file" accept="image/*" class="mt-1 block w-full text-[12.1px] text-gray-600" />
 
 <div id="photo-preview-wrapper" class="mt-2 relative inline-block hidden">
     <img id="photo-preview" alt="" class="h-24 w-24 object-cover rounded">

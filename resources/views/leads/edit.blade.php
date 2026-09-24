@@ -71,35 +71,39 @@
                     </div>
                 </div>
 
-                <div :class="(personalOpen || listingsOpen || documentsOpen) ? 'max-w-3xl' : 'max-w-sm'" class="transition-[max-width] duration-300" x-data="{ personalOpen: {{ in_array('personal', (array) request('open', [])) ? 'true' : 'false' }}, listingsOpen: {{ (in_array('listings', (array) request('open', [])) || $lead->needsListingNarrowedForOffer()) ? 'true' : 'false' }}, documentsOpen: {{ in_array('documents', (array) request('open', [])) ? 'true' : 'false' }} }">
+                <div :class="(personalOpen || listingsOpen || documentsOpen) ? 'max-w-3xl' : 'max-w-sm'" class="transition-[max-width] duration-300" x-data="{ personalOpen: {{ in_array('personal', (array) request('open', [])) ? 'true' : 'false' }}, listingsOpen: {{ (in_array('listings', (array) request('open', [])) || $lead->needsListingNarrowed() || $lead->blockingUnderContractLead()) ? 'true' : 'false' }}, documentsOpen: {{ in_array('documents', (array) request('open', [])) ? 'true' : 'false' }} }">
 
                     {{-- root node: type/status --}}
                     <div class="flex items-center justify-start gap-4 pb-4 mb-4 border-b border-gray-200">
                         @php
-                            $typeOptions = ['' => __('Not set'), 'buyer' => __('Buyer'), 'seller' => __('Seller'), 'investor' => __('Investor'), 'renter' => __('Renter'), 'landlord' => __('Landlord')];
-                            $statusOptions = ['new' => __('New'), 'contacted' => __('Contacted'), 'qualified' => __('Qualified'), 'offer' => __('Offer'), 'under_contract' => __('Under Contract'), 'closed' => __('Closed'), 'lost' => __('Lost')];
+                            // Only Buyer and Renter reach this page at all — Seller and Landlord
+                            // leads are owned by a listing and redirect to it instead (see
+                            // LeadController::edit()), so the type here is always one of these two.
+                            $typeLabels = ['' => __('Not set'), 'buyer' => __('Buyer'), 'renter' => __('Renter')];
+                            $statusOptions = (\App\Models\Lead::PIPELINE_STAGE_LABELS[$lead->type] ?? []) + ['lost' => __('Lost')];
                         @endphp
-                        <div
-                            class="flex items-center gap-4 shrink-0"
-                            x-data='{
-                                typeVal: "{{ old('type', $lead->type) }}",
-                                typeOpen: false,
-                                typeLabels: @json($typeOptions)
-                            }'
-                        >
-                            <input type="hidden" form="lead-details-form" name="type" :value="typeVal">
-                            <div class="relative" @click.outside="typeOpen = false">
-                                <button type="button" @click="typeOpen = !typeOpen" class="flex items-center gap-1 text-[12.1px] text-gray-700 hover:text-gray-900 cursor-pointer">
-                                    <span :class="typeVal ? 'font-bold' : 'font-normal'" x-text="typeLabels[typeVal]"></span>
-                                    <svg class="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                                    </svg>
-                                </button>
+                        <div class="flex items-center gap-4 shrink-0">
+                            <div
+                                x-data='{
+                                    typeVal: "{{ old('type', $lead->type) }}",
+                                    typeOpen: false,
+                                    typeLabels: @json($typeLabels)
+                                }'
+                            >
+                                <input type="hidden" form="lead-details-form" name="type" :value="typeVal">
+                                <div class="relative" @click.outside="typeOpen = false">
+                                    <button type="button" @click="typeOpen = !typeOpen" class="flex items-center gap-1 text-[12.1px] text-gray-700 hover:text-gray-900 cursor-pointer">
+                                        <span :class="typeVal ? 'font-bold' : 'font-normal'" x-text="typeLabels[typeVal]"></span>
+                                        <svg class="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                        </svg>
+                                    </button>
 
-                                <div x-show="typeOpen" x-transition class="absolute left-0 top-full mt-1 z-20 w-36 bg-white border border-gray-200 rounded-xl shadow-lg py-1" style="display: none;">
-                                    @foreach ($typeOptions as $value => $label)
-                                        <button type="button" @click="typeVal = '{{ $value }}'; typeOpen = false; $nextTick(() => document.getElementById('lead-details-form').submit())" class="block w-full text-left px-3 py-1.5 text-[12.1px] text-gray-700 hover:bg-gray-50" :class="typeVal === '{{ $value }}' ? 'font-semibold text-gray-900' : ''">{{ $label }}</button>
-                                    @endforeach
+                                    <div x-show="typeOpen" x-transition class="absolute left-0 top-full mt-1 z-20 w-36 bg-white border border-gray-200 rounded-xl shadow-lg py-1" style="display: none;">
+                                        @foreach ($typeLabels as $value => $label)
+                                            <button type="button" @click="typeVal = '{{ $value }}'; typeOpen = false; $nextTick(() => document.getElementById('lead-details-form').submit())" class="block w-full text-left px-3 py-1.5 text-[12.1px] text-gray-700 hover:bg-gray-50" :class="typeVal === '{{ $value }}' ? 'font-semibold text-gray-900' : ''">{{ $label }}</button>
+                                        @endforeach
+                                    </div>
                                 </div>
                             </div>
 
@@ -116,50 +120,7 @@
                             @method('patch')
                             <input type="hidden" name="open_branches" :value="[personalOpen && 'personal', listingsOpen && 'listings', documentsOpen && 'documents'].filter(Boolean).join(',')">
 
-                            {{-- Personal Info node --}}
-                            <div class="pl-6 -ml-px border-l-2 border-transparent py-3">
-                                <div class="flex items-start gap-6">
-                                    <button type="button" @click="personalOpen = !personalOpen" class="shrink-0 w-36 flex items-center gap-2 text-[12.1px] font-medium" :class="personalOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
-                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        {{ __('Personal Info') }}
-                                        <svg class="h-3 w-3 transition-transform" :class="personalOpen ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </button>
-
-                                    <div x-show="personalOpen" class="flex-1 max-w-sm border-l border-gray-100 pl-6">
-                                        <div class="border-l-2 border-gray-200 pl-6 space-y-4">
-                                            <div>
-                                                <x-input-label for="first_name" :value="__('First name')" class="!text-[12.1px]" />
-                                                <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full !text-[12.1px]" :value="old('first_name', $lead->first_name)" required />
-                                                <x-input-error class="mt-2" :messages="$errors->get('first_name')" />
-                                            </div>
-
-                                            <div>
-                                                <x-input-label for="last_name" :value="__('Last name')" class="!text-[12.1px]" />
-                                                <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full !text-[12.1px]" :value="old('last_name', $lead->last_name)" />
-                                                <x-input-error class="mt-2" :messages="$errors->get('last_name')" />
-                                            </div>
-
-                                            <div>
-                                                <x-input-label for="phone" :value="__('Phone')" class="!text-[12.1px]" />
-                                                <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full !text-[12.1px]" :value="old('phone', $lead->phone)" />
-                                                <x-input-error class="mt-2" :messages="$errors->get('phone')" />
-                                            </div>
-
-                                            <div>
-                                                <x-input-label for="email" :value="__('Email')" class="!text-[12.1px]" />
-                                                <x-text-input id="email" name="email" type="email" class="mt-1 block w-full !text-[12.1px]" :value="old('email', $lead->email)" />
-                                                <x-input-error class="mt-2" :messages="$errors->get('email')" />
-                                            </div>
-
-                                            <x-primary-button>{{ __('Save') }}</x-primary-button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            @include('leads.partials.personal-info-branch', ['lead' => $lead])
 
                             {{-- Listings node --}}
                             <div class="pl-6 -ml-px border-l-2 border-transparent py-3">
@@ -192,6 +153,13 @@
                                             {{-- Property search branch, only appears once a type is picked, to the right of the type branch --}}
                                             <div x-show="propertyType" x-transition class="border-l border-gray-100 pl-6">
                                                 <div class="border-l-2 border-gray-200 pl-6 w-64">
+                                                    @php
+                                                        $listingTypeFilter = match ($lead->type) {
+                                                            'renter' => 'rent',
+                                                            'buyer', 'seller' => 'sale',
+                                                            default => '',
+                                                        };
+                                                    @endphp
                                                     @include('partials.tag-picker', [
                                                         'name' => 'listing_ids',
                                                         'searchUrl' => route('listings.search'),
@@ -200,7 +168,7 @@
                                                             'id' => $listing->id,
                                                             'label' => "#{$listing->id} — {$listing->address_line}, {$listing->city}",
                                                         ]),
-                                                        'extraParamsExpr' => "'property_type=' + (propertyType || '')",
+                                                        'extraParamsExpr' => "'property_type=' + (propertyType || '') + '&listing_type=" . $listingTypeFilter . "'",
                                                     ])
                                                     <x-input-error class="mt-2" :messages="$errors->get('listing_ids')" />
 
@@ -214,57 +182,7 @@
                                 </div>
                             </div>
 
-                            {{-- Documents node --}}
-                            @if ($lead->hasDocumentChecklist())
-                                <div class="pl-6 -ml-px border-l-2 border-transparent py-3">
-                                    <div class="flex items-start gap-6">
-                                        <button type="button" @click="documentsOpen = !documentsOpen" class="shrink-0 w-36 flex items-center gap-2 text-[12.1px] font-medium" :class="documentsOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
-                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776" />
-                                            </svg>
-                                            {{ __('Documents') }}
-                                            <svg class="h-3 w-3 transition-transform" :class="documentsOpen ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </button>
-
-                                        @php $docStageDefault = $lead->documents->contains('checked', true) ? 'true' : 'false'; @endphp
-                                        <div x-show="documentsOpen" class="flex-1 max-w-sm border-l border-gray-100 pl-6" x-data="{ docStage: { contacted: {{ $docStageDefault }}, qualified: {{ $docStageDefault }}, offer: {{ $docStageDefault }}, under_contract: {{ $docStageDefault }}, closed: {{ $docStageDefault }} } }">
-                                            <div class="border-l-2 border-gray-200 pl-6">
-                                                @foreach ([
-                                                    'contacted' => __('Contacted'),
-                                                    'qualified' => __('Qualified'),
-                                                    'offer' => __('Offer'),
-                                                    'under_contract' => __('Under Contract'),
-                                                    'closed' => __('Closed'),
-                                                ] as $stageKey => $stageLabel)
-                                                    <div class="py-2">
-                                                        <button type="button" @click="docStage.{{ $stageKey }} = !docStage.{{ $stageKey }}" class="w-full flex items-center gap-2 text-[12.1px] font-medium" :class="docStage.{{ $stageKey }} ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
-                                                            {{ $stageLabel }}
-                                                            <svg class="h-3 w-3 transition-transform" :class="docStage.{{ $stageKey }} ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                                            </svg>
-                                                        </button>
-
-                                                        <div x-show="docStage.{{ $stageKey }}" class="mt-2 border-l border-gray-100 pl-4 space-y-2">
-                                                            @foreach ($lead->documentChecklistForStage($stageKey) as $key => $doc)
-                                                                <label class="flex items-center gap-2 text-[12.1px] text-gray-700">
-                                                                    <input type="checkbox" name="documents[{{ $key }}]" value="1" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" @checked($doc['checked'])>
-                                                                    {{ __($doc['label']) }}
-                                                                </label>
-                                                            @endforeach
-                                                        </div>
-                                                    </div>
-                                                @endforeach
-
-                                                <div class="pt-2 pb-2">
-                                                    <x-primary-button>{{ __('Save') }}</x-primary-button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endif
+                            @include('leads.partials.documents-branch', ['lead' => $lead])
                         </form>
 
 
@@ -299,18 +217,38 @@
             </div>
         </div>
 
-        <x-modal name="narrow-listing-warning" :show="$lead->needsListingNarrowedForOffer()" focusable>
+        <x-modal name="narrow-listing-warning" :show="$lead->needsListingNarrowed()" focusable>
             <div class="p-6">
+                @php $targetStageLabel = $lead->targetStageLabelOnceListingNarrowed(); @endphp
                 <h2 class="text-sm font-medium text-gray-900">
-                    {{ __('This offer needs one listing') }}
+                    {{ __('This lead needs one listing') }}
                 </h2>
 
                 <p class="mt-2 text-[12.1px] text-gray-600">
                     @if ($lead->listings->isEmpty())
-                        {{ __('This lead is ready to move to Offer — link the listing this offer is for.') }}
+                        {{ __('This lead is ready to move to :stage — link the listing it\'s for.', ['stage' => $targetStageLabel]) }}
                     @else
-                        {{ __('This lead has :count listings linked — remove all but the one this offer is for to move it to Offer.', ['count' => $lead->listings->count()]) }}
+                        {{ __('This lead has :count listings linked — remove all but the one it\'s for to move it to :stage.', ['count' => $lead->listings->count(), 'stage' => $targetStageLabel]) }}
                     @endif
+                </p>
+
+                <div class="mt-6 flex justify-end">
+                    <x-primary-button x-on:click="$dispatch('close')">
+                        {{ __('Got it') }}
+                    </x-primary-button>
+                </div>
+            </div>
+        </x-modal>
+
+        <x-modal name="under-contract-conflict-warning" :show="(bool) $lead->blockingUnderContractLead()" focusable>
+            <div class="p-6">
+                @php $blockingLead = $lead->blockingUnderContractLead(); @endphp
+                <h2 class="text-sm font-medium text-gray-900">
+                    {{ __('This listing is already under contract') }}
+                </h2>
+
+                <p class="mt-2 text-[12.1px] text-gray-600">
+                    {{ __(':blockingLead already has this listing under contract — resolve that before :lead can move there too.', ['blockingLead' => $blockingLead?->name, 'lead' => $lead->name]) }}
                 </p>
 
                 <div class="mt-6 flex justify-end">

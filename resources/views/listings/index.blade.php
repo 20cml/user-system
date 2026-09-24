@@ -146,14 +146,74 @@
     </div>
 
     <x-modal name="add-listing" :show="$errors->any()" focusable>
-        <form method="post" action="{{ route('listings.store') }}" class="p-6 space-y-6">
+        <form method="post" action="{{ route('listings.store') }}" class="p-6 space-y-6" x-data="{ listingType: '{{ old('listing_type') }}', propertyType: '{{ old('property_type') }}' }">
             @csrf
 
             <h2 class="text-sm font-medium text-gray-900">
                 {{ __('Add a Listing') }}
             </h2>
 
-            @include('listings.partials.address-fields')
+            <div>
+                <x-input-label :value="__('Selling or renting?')" class="!text-[12.1px]" />
+                <input type="hidden" name="listing_type" :value="listingType">
+                <div class="mt-1 flex items-center gap-2">
+                    <button type="button" @click="listingType = 'sale'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="listingType === 'sale' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Selling') }}</button>
+                    <button type="button" @click="listingType = 'rent'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="listingType === 'rent' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Renting') }}</button>
+                </div>
+                <x-input-error class="mt-2" :messages="$errors->get('listing_type')" />
+            </div>
+
+            <div>
+                <x-input-label :value="__('Property type')" class="!text-[12.1px]" />
+                <input type="hidden" name="property_type" :value="propertyType">
+                <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <button type="button" @click="propertyType = 'condo'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="propertyType === 'condo' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Condo') }}</button>
+                    <button type="button" @click="propertyType = 'house'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="propertyType === 'house' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('House') }}</button>
+                    <button type="button" @click="propertyType = 'land'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="propertyType === 'land' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Land') }}</button>
+                    <button type="button" @click="propertyType = 'commercial'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="propertyType === 'commercial' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Commercial') }}</button>
+                </div>
+                <x-input-error class="mt-2" :messages="$errors->get('property_type')" />
+            </div>
+
+            <p class="text-[12.1px] font-medium text-gray-700 pt-2 border-t border-gray-100">
+                {{ __("Who's selling or renting it out?") }}
+            </p>
+
+            <div>
+                <x-input-label for="owner_first_name" :value="__('First name')" class="!text-[12.1px]" />
+                <x-text-input id="owner_first_name" name="owner_first_name" type="text" class="mt-1 block w-full !text-[12.1px]" :value="old('owner_first_name')" required />
+                <x-input-error class="mt-2" :messages="$errors->get('owner_first_name')" />
+            </div>
+
+            <div>
+                <x-input-label for="owner_last_name" :value="__('Last name')" class="!text-[12.1px]" />
+                <x-text-input id="owner_last_name" name="owner_last_name" type="text" class="mt-1 block w-full !text-[12.1px]" :value="old('owner_last_name')" />
+                <x-input-error class="mt-2" :messages="$errors->get('owner_last_name')" />
+            </div>
+
+            <div>
+                <x-input-label for="owner_phone" :value="__('Phone')" class="!text-[12.1px]" />
+                <x-text-input id="owner_phone" name="owner_phone" type="text" class="mt-1 block w-full !text-[12.1px]" :value="old('owner_phone')" />
+                <x-input-error class="mt-2" :messages="$errors->get('owner_phone')" />
+            </div>
+
+            <div>
+                <x-input-label for="owner_email" :value="__('Email')" class="!text-[12.1px]" />
+                <x-text-input id="owner_email" name="owner_email" type="email" class="mt-1 block w-full !text-[12.1px]" :value="old('owner_email')" />
+                <x-input-error class="mt-2" :messages="$errors->get('owner_email')" />
+            </div>
+
+            <p class="text-[12.1px] font-medium text-gray-700 pt-2 border-t border-gray-100">
+                {{ __('Property Details') }}
+            </p>
+
+            <div>
+                <x-input-label for="price" :value="__('Price')" class="!text-[12.1px]" />
+                <input type="text" inputmode="numeric" id="price" name="price" value="{{ old('price') !== null ? number_format((float) old('price')) : '' }}" class="price-input mt-1 block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 !text-[12.1px]">
+                <x-input-error class="mt-2" :messages="$errors->get('price')" />
+            </div>
+
+            @include('listings.partials.address-fields', ['listing' => null])
 
             <div>
                 <x-input-label for="area_sqm" :value="__('Size')" class="!text-[12.1px]" />
@@ -179,4 +239,20 @@
             </div>
         </form>
     </x-modal>
+
+    <script>
+        (function () {
+            var priceInput = document.getElementById('price');
+            var form = priceInput.closest('form');
+
+            priceInput.addEventListener('input', function () {
+                var digits = priceInput.value.replace(/\D/g, '');
+                priceInput.value = digits ? Number(digits).toLocaleString('en-US') : '';
+            });
+
+            form.addEventListener('submit', function () {
+                priceInput.value = priceInput.value.replace(/\D/g, '');
+            });
+        })();
+    </script>
 </x-app-layout>

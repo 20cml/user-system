@@ -20,7 +20,15 @@ class LeadController extends Controller
      */
     public function index(Request $request): View|JsonResponse
     {
-        $leads = $request->user()->leads()->orderBy('first_name')->orderBy('last_name');
+        // Seller and Landlord leads are owned by a listing (Listing::owner())
+        // and managed from that listing's own edit page — "My Leads" only
+        // ever shows the leads interested in listings (Buyer, Renter, or not
+        // yet typed), never a listing's own Seller/Landlord. `type` is
+        // nullable, and SQL's NOT IN excludes NULL rows entirely, so that
+        // case is spelled out explicitly rather than silently dropped.
+        $leads = $request->user()->leads()
+            ->where(fn ($query) => $query->whereNotIn('type', ['seller', 'landlord'])->orWhereNull('type'))
+            ->orderBy('first_name')->orderBy('last_name');
 
         if ($statuses = $request->query('status')) {
             $leads->whereIn('status', (array) $statuses);
@@ -67,14 +75,19 @@ class LeadController extends Controller
     }
 
     /**
-     * Show the form for editing an existing lead.
+     * Show the form for editing an existing lead. A Seller/Landlord lead has
+     * no page of its own — it's managed from the listing it belongs to.
      */
-    public function edit(Lead $lead): View
+    public function edit(Lead $lead): View|RedirectResponse
     {
         $this->authorize('update', $lead);
 
+        if ($lead->ownedListing) {
+            return redirect()->route('listings.edit', $lead->ownedListing);
+        }
+
         return view('leads.edit', [
-            'lead' => $lead->load('listings', 'notes', 'documents'),
+            'lead' => $lead->load('listings', 'notes', 'documents', 'ownedListing'),
         ]);
     }
 
@@ -104,6 +117,13 @@ class LeadController extends Controller
         $lead->advanceStatusFromDocuments();
 
         $openBranches = array_filter(explode(',', (string) $request->input('open_branches')));
+
+        // A Seller/Landlord lead has no page of its own — it's managed from
+        // the listing it belongs to (see listings/edit.blade.php's Owner
+        // branch), so send its saves back there instead.
+        if ($lead->ownedListing) {
+            return redirect()->route('listings.edit', [$lead->ownedListing, 'open' => $openBranches]);
+        }
 
         return redirect()->route('leads.edit', [$lead, 'open' => $openBranches]);
     }

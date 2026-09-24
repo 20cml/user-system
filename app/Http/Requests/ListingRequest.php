@@ -15,6 +15,14 @@ class ListingRequest extends FormRequest
      */
     public function rules(): array
     {
+        // On create, the listing's owner (seller/landlord) is entered right
+        // alongside it — see ListingController::store() — so listing_type
+        // and property_type must be known up front too, to know which lead
+        // type to create and which document checklist applies. On update,
+        // all three stay optional, filled in later from the listing's own
+        // root row.
+        $creating = $this->isMethod('post');
+
         return [
             'address_line' => ['required', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:255'],
@@ -22,8 +30,8 @@ class ListingRequest extends FormRequest
             'postal_code' => ['required', 'string', 'max:20'],
             'country' => ['required', Rule::in(['CA', 'US'])],
             'price' => ['nullable', 'numeric', 'gt:0'],
-            'listing_type' => ['nullable', Rule::in(['sale', 'rent'])],
-            'property_type' => ['nullable', Rule::in(['house', 'condo', 'land', 'commercial'])],
+            'listing_type' => [$creating ? 'required' : 'nullable', Rule::in(['sale', 'rent'])],
+            'property_type' => [$creating ? 'required' : 'nullable', Rule::in(['house', 'condo', 'land', 'commercial'])],
             'status' => ['sometimes', Rule::in(['available', 'pending', 'closed'])],
             'area_sqm' => ['nullable', 'numeric'],
             'description' => ['nullable', 'string'],
@@ -31,6 +39,10 @@ class ListingRequest extends FormRequest
             'remove_photo' => ['nullable', 'boolean'],
             'lead_ids' => ['array'],
             'lead_ids.*' => [Rule::exists('leads', 'id')->where('user_id', $this->user()->id)],
+            'owner_first_name' => [$creating ? 'required' : 'sometimes', 'string', 'max:255'],
+            'owner_last_name' => ['nullable', 'string', 'max:255'],
+            'owner_phone' => ['nullable', 'string', 'max:20'],
+            'owner_email' => ['nullable', 'string', 'email', 'max:255'],
         ];
     }
 }

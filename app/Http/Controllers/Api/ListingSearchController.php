@@ -16,6 +16,7 @@ class ListingSearchController extends Controller
     {
         $query = trim((string) $request->query('query', ''));
         $propertyType = $request->query('property_type');
+        $listingType = $request->query('listing_type');
 
         $listings = $request->user()->listings()
             ->when($query !== '', function ($builder) use ($query) {
@@ -29,6 +30,7 @@ class ListingSearchController extends Controller
                 });
             })
             ->when($propertyType, fn ($builder) => $builder->where('property_type', $propertyType))
+            ->when($listingType, fn ($builder) => $builder->where('listing_type', $listingType))
             ->latest()
             ->limit(10)
             ->get(['id', 'address_line', 'city']);
