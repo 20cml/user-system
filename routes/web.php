@@ -1,12 +1,12 @@
 <?php
 
+use App\Funnel\Pipelines\PipelineResolver;
 use App\Http\Controllers\Api\AddressSuggestionController;
 use App\Http\Controllers\Api\LeadSearchController;
 use App\Http\Controllers\Api\ListingSearchController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\ListingController;
 use App\Http\Controllers\ProfileController;
-use App\Models\Lead;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,8 +21,9 @@ Route::get('/dashboard', function (Request $request) {
 
     session(['dashboard_pipeline' => $pipeline]);
 
-    $stages = Lead::PIPELINE_STAGES_BY_TYPE[$pipeline];
-    $stageLabels = Lead::PIPELINE_STAGE_LABELS[$pipeline];
+    $pipelineStrategy = app(PipelineResolver::class)->forType($pipeline);
+    $stages = $pipelineStrategy->stageKeys();
+    $stageLabels = $pipelineStrategy->labels();
 
     $leads = auth()->user()->leads()->where('type', $pipeline)->latest()->get()->groupBy('status');
 

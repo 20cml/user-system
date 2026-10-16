@@ -15,8 +15,8 @@
             </button>
 
             @php
-                $docStages = collect(\App\Models\Lead::PIPELINE_STAGES_BY_TYPE[$lead->type] ?? []);
-                $docStageLabels = \App\Models\Lead::PIPELINE_STAGE_LABELS[$lead->type] ?? [];
+                $docStages = collect($lead->stageKeys());
+                $docStageLabels = $lead->stageLabels();
                 $docStageDefault = $lead->documents->contains('checked', true);
                 $docStageInit = $docStages->mapWithKeys(fn ($stage) => [$stage => $docStageDefault])->all();
             @endphp

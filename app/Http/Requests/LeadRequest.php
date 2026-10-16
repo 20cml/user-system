@@ -23,9 +23,11 @@ class LeadRequest extends FormRequest
         // lead created that way needs to keep saving its own details —
         // except a lead that owns a listing (Listing::owner()) can't be
         // switched to a different type at all, since the listing depends
-        // on it staying whichever of the two it already is.
+        // on it staying whichever of the two it already is. The owner form
+        // on the listing page doesn't post a type, so it's optional there:
+        // omitted leaves it untouched, anything else must match.
         $typeRules = match (true) {
-            (bool) $this->route('lead')?->ownedListing => ['required', Rule::in([$this->route('lead')->type])],
+            (bool) $this->route('lead')?->ownedListing => ['sometimes', Rule::in([$this->route('lead')->type])],
             $this->isMethod('post') => ['required', Rule::in(['buyer', 'renter'])],
             default => ['nullable', Rule::in(['buyer', 'seller', 'renter', 'landlord'])],
         };
@@ -38,7 +40,7 @@ class LeadRequest extends FormRequest
             'type' => $typeRules,
             'property_type' => ['nullable', Rule::in(['condo', 'house', 'land', 'commercial'])],
             'status' => ['sometimes', Rule::in([
-                ...collect(Lead::PIPELINE_STAGES_BY_TYPE)->flatten()->unique()->values()->all(),
+                ...Lead::allStageKeys(),
                 'lost',
             ])],
             'listing_ids' => ['array'],

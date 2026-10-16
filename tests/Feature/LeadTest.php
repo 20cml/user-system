@@ -86,7 +86,7 @@ class LeadTest extends TestCase
         $qualified = Lead::factory()->for($user)->create(['status' => 'qualified', 'first_name' => 'Qualified', 'last_name' => 'Lead']);
         $lost = Lead::factory()->for($user)->create(['status' => 'lost', 'first_name' => 'Lost', 'last_name' => 'Lead']);
 
-        $response = $this->actingAs($user)->get('/leads?' . http_build_query(['status' => ['qualified']]));
+        $response = $this->actingAs($user)->get('/leads?'.http_build_query(['status' => ['qualified']]));
 
         $response->assertOk();
         $response->assertSee('Qualified Lead');
@@ -149,6 +149,31 @@ class LeadTest extends TestCase
             $this->assertSame('Updated', $lead->fresh()->first_name);
             $this->assertSame($type, $lead->fresh()->type);
         }
+    }
+
+    public function test_a_listing_owners_documents_save_from_the_listing_page_form_without_a_type_field(): void
+    {
+        // The owner form on the listing page (listings/edit.blade.php) only
+        // posts the name/phone/email fields and the documents — it has no
+        // `type` input — so saving must not demand one.
+        $user = User::factory()->create();
+        $owner = Lead::factory()->for($user)->create(['type' => 'seller', 'property_type' => 'condo']);
+        Listing::factory()->for($user)->create(['owner_lead_id' => $owner->id, 'listing_type' => 'sale']);
+
+        $response = $this->actingAs($user)->patch("/leads/{$owner->id}", [
+            'first_name' => 'Jane',
+            'documents' => [
+                'reco_information_guide' => '1',
+                'id_client_verification' => '1',
+                'seller_representation_agreement' => '1',
+                'property_title_information' => '1',
+                'condo_corporation_information' => '1',
+            ],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertTrue($owner->fresh()->documents()->where('key', 'reco_information_guide')->first()->checked);
+        $this->assertSame('contacted', $owner->fresh()->status);
     }
 
     public function test_a_listing_owners_type_cannot_be_changed(): void

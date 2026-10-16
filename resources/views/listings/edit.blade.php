@@ -15,7 +15,7 @@
                         $propertyTypeOptions = ['' => __('Not set'), 'house' => __('House'), 'condo' => __('Condo'), 'land' => __('Land'), 'commercial' => __('Commercial')];
                         $listingStatusOptions = ['available' => __('Available'), 'pending' => __('Pending'), 'closed' => __('Closed')];
                         $owner = $listing->owner;
-                        $ownerStatusOptions = $owner ? (\App\Models\Lead::PIPELINE_STAGE_LABELS[$owner->type] ?? []) + ['lost' => __('Lost')] : [];
+                        $ownerStatusOptions = $owner ? $owner->stageLabels() + ['lost' => __('Lost')] : [];
                     @endphp
                     <div
                         :class="ownerProfileOpen ? 'max-w-6xl' : ((photoOpen || interestedOpen || detailsOpen) ? 'max-w-3xl' : 'max-w-xl')"
@@ -185,6 +185,7 @@
                                                 'form' => 'listing-form',
                                                 'searchUrl' => route('leads.search'),
                                                 'placeholder' => __('Search by lead name...'),
+                                                'extraParamsExpr' => "'lead_type=' + (listingTypeVal === 'rent' ? 'renter' : (listingTypeVal === 'sale' ? 'buyer' : ''))",
                                                 'selected' => $listing->leads->map(fn ($lead) => [
                                                     'id' => $lead->id,
                                                     'label' => $lead->name,

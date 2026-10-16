@@ -38,7 +38,16 @@ class ListingRequest extends FormRequest
             'photo' => ['nullable', 'image', 'max:5120'],
             'remove_photo' => ['nullable', 'boolean'],
             'lead_ids' => ['array'],
-            'lead_ids.*' => [Rule::exists('leads', 'id')->where('user_id', $this->user()->id)],
+            'lead_ids.*' => [Rule::exists('leads', 'id')->where(function ($query) {
+                $query->where('user_id', $this->user()->id);
+
+                // Rental listings take only Renter leads; sale listings only Buyer leads.
+                $listingType = $this->input('listing_type') ?? $this->route('listing')?->listing_type;
+                $leadType = ['rent' => 'renter', 'sale' => 'buyer'][$listingType] ?? null;
+                if ($leadType) {
+                    $query->where('type', $leadType);
+                }
+            })],
             'owner_first_name' => [$creating ? 'required' : 'sometimes', 'string', 'max:255'],
             'owner_last_name' => ['nullable', 'string', 'max:255'],
             'owner_phone' => ['nullable', 'string', 'max:20'],

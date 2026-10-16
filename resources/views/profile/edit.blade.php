@@ -9,13 +9,20 @@
 
     <div class="p-3 sm:p-4 min-h-full">
         <div class="relative p-3 sm:p-4 bg-white shadow sm:rounded-lg min-h-full flex flex-col">
+                @if ($user->profile_completed_at === null)
+                    <div class="max-w-xl mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-[12.1px] text-amber-800" role="alert">
+                        <p class="font-medium">{{ __('Complete your profile to continue') }}</p>
+                        <p class="mt-1">{{ __('Please fill in the required fields in Personal Info and Address, then save. Dashboard, Listings and Leads unlock once your profile is complete.') }}</p>
+                    </div>
+                @endif
+
                 <div class="max-w-xl">
                     <div
                         x-data="{
                             firstName: {{ \Illuminate\Support\Js::from(old('first_name', $user->first_name)) }},
                             lastName: {{ \Illuminate\Support\Js::from(old('last_name', $user->last_name)) }},
-                            personalOpen: {{ ($errors->hasAny(['first_name', 'last_name', 'email', 'phone']) || in_array('personal', (array) request('open', []))) ? 'true' : 'false' }},
-                            addressOpen: {{ ($errors->hasAny(['postal_code', 'address_line', 'address_complement', 'city', 'state_province', 'country']) || in_array('address', (array) request('open', []))) ? 'true' : 'false' }},
+                            personalOpen: {{ ($user->profile_completed_at === null || $errors->hasAny(['first_name', 'last_name', 'email', 'phone']) || in_array('personal', (array) request('open', []))) ? 'true' : 'false' }},
+                            addressOpen: {{ ($user->profile_completed_at === null || $errors->hasAny(['postal_code', 'address_line', 'address_complement', 'city', 'state_province', 'country']) || in_array('address', (array) request('open', []))) ? 'true' : 'false' }},
                             passwordOpen: {{ ($errors->updatePassword->any() || in_array('password', (array) request('open', []))) ? 'true' : 'false' }}
                         }"
                     >
@@ -160,7 +167,8 @@
                                 </div>
                             </form>
 
-                            {{-- Password node --}}
+                            {{-- Password node: Google-only accounts have no password to change --}}
+                            @if ($user->password !== null)
                             <div class="pl-6 -ml-px border-l-2 border-transparent py-3">
                                 <div class="flex items-start gap-6">
                                     <button type="button" @click="passwordOpen = !passwordOpen" class="shrink-0 w-36 flex items-center gap-2 text-[12.1px] font-medium" :class="passwordOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
@@ -208,6 +216,7 @@
                                     </div>
                                 </div>
                             </div>
+                            @endif
                         </div>
                     </div>
                 </div>

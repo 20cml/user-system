@@ -326,11 +326,37 @@ class ListingTest extends TestCase
         $response->assertSee('Listing Two');
     }
 
+    public function test_a_rental_listing_only_accepts_renter_leads(): void
+    {
+        $user = User::factory()->create();
+        $buyer = Lead::factory()->for($user)->create(['first_name' => 'Bella', 'last_name' => '', 'type' => 'buyer']);
+        $renter = Lead::factory()->for($user)->create(['first_name' => 'Rita', 'last_name' => '', 'type' => 'renter']);
+
+        $this->actingAs($user)->post('/listings', $this->listingData(['listing_type' => 'rent', 'lead_ids' => [$buyer->id]]))
+            ->assertSessionHasErrors('lead_ids.0');
+        $this->assertSame(0, Listing::count());
+
+        $this->actingAs($user)->post('/listings', $this->listingData(['listing_type' => 'rent', 'lead_ids' => [$renter->id]]))
+            ->assertSessionHasNoErrors();
+        $this->assertCount(1, Listing::first()->leads);
+    }
+
+    public function test_lead_search_filters_by_lead_type(): void
+    {
+        $user = User::factory()->create();
+        Lead::factory()->for($user)->create(['first_name' => 'Bella', 'last_name' => '', 'type' => 'buyer']);
+        Lead::factory()->for($user)->create(['first_name' => 'Rita', 'last_name' => '', 'type' => 'renter']);
+
+        $this->actingAs($user)->getJson('/api/leads-search?lead_type=renter')
+            ->assertJsonCount(1)
+            ->assertJsonFragment(['label' => 'Rita']);
+    }
+
     public function test_linking_leads_to_a_listing_on_create_is_visible_on_edit(): void
     {
         $user = User::factory()->create();
-        $leadA = Lead::factory()->for($user)->create(['first_name' => 'Alice', 'last_name' => '']);
-        $leadB = Lead::factory()->for($user)->create(['first_name' => 'Bob', 'last_name' => '']);
+        $leadA = Lead::factory()->for($user)->create(['first_name' => 'Alice', 'last_name' => '', 'type' => 'buyer']);
+        $leadB = Lead::factory()->for($user)->create(['first_name' => 'Bob', 'last_name' => '', 'type' => 'buyer']);
 
         $this->actingAs($user)->post('/listings', $this->listingData([
             'lead_ids' => [$leadA->id, $leadB->id],

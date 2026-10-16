@@ -80,7 +80,7 @@
                             // leads are owned by a listing and redirect to it instead (see
                             // LeadController::edit()), so the type here is always one of these two.
                             $typeLabels = ['' => __('Not set'), 'buyer' => __('Buyer'), 'renter' => __('Renter')];
-                            $statusOptions = (\App\Models\Lead::PIPELINE_STAGE_LABELS[$lead->type] ?? []) + ['lost' => __('Lost')];
+                            $statusOptions = $lead->stageLabels() + ['lost' => __('Lost')];
                         @endphp
                         <div class="flex items-center gap-4 shrink-0">
                             <div
@@ -136,7 +136,7 @@
                                     </button>
 
                                     <div x-show="listingsOpen" class="flex-1 max-w-2xl border-l border-gray-100 pl-6" x-data="{ propertyType: '{{ old('property_type', $lead->property_type) }}' || null }">
-                                        <p class="text-[12.1px] text-gray-500 mb-2">{{ __('What are they buying?') }}</p>
+                                        <p class="text-[12.1px] text-gray-500 mb-2">{{ $lead->type === 'renter' ? __('What are they renting?') : __('What are they buying?') }}</p>
 
                                         <div class="flex items-center gap-6">
                                             {{-- Property type branch --}}

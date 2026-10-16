@@ -102,19 +102,7 @@ class LeadController extends Controller
         $lead->listings()->sync($request->safe()->input('listing_ids', []));
         $lead->listings()->get()->each->syncStatusFromLeads();
 
-        $submittedDocuments = $request->input('documents', []);
-        $allDocumentKeys = collect(Lead::DOCUMENTS_BY_TYPE[$lead->type][$lead->property_type] ?? [])
-            ->flatMap(fn ($docs) => array_keys($docs))
-            ->unique();
-
-        foreach ($allDocumentKeys as $key) {
-            $lead->documents()->updateOrCreate(
-                ['key' => $key],
-                ['checked' => (bool) ($submittedDocuments[$key] ?? false)],
-            );
-        }
-
-        $lead->advanceStatusFromDocuments();
+        $lead->updateDocuments($request->input('documents', []));
 
         $openBranches = array_filter(explode(',', (string) $request->input('open_branches')));
 
