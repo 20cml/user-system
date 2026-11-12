@@ -37,7 +37,7 @@ class ListingSearchController extends Controller
 
         return response()->json($listings->map(fn ($listing) => [
             'id' => $listing->id,
-            'label' => "#{$listing->id} — {$listing->address_line}, {$listing->city}",
+            'label' => "#{$listing->id} — {$listing->title()}",
         ]));
     }
 }

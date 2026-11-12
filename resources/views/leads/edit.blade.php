@@ -76,10 +76,9 @@
                     {{-- root node: type/status --}}
                     <div class="flex items-center justify-start gap-4 pb-4 mb-4 border-b border-gray-200">
                         @php
-                            // Only Buyer and Renter reach this page at all — Seller and Landlord
-                            // leads are owned by a listing and redirect to it instead (see
-                            // LeadController::edit()), so the type here is always one of these two.
-                            $typeLabels = ['' => __('Not set'), 'buyer' => __('Buyer'), 'renter' => __('Renter')];
+                            $typeLabels = ['' => __('Not set'), 'buyer' => __('Buyer'), 'renter' => __('Renter'), 'seller' => __('Seller'), 'landlord' => __('Landlord')];
+                            // A Seller/Landlord owns listings; only Buyer/Renter have "interested" listings.
+                            $isOwner = in_array($lead->type, ['seller', 'landlord'], true);
                             $statusOptions = $lead->stageLabels() + ['lost' => __('Lost')];
                         @endphp
                         <div class="flex items-center gap-4 shrink-0">
@@ -111,6 +110,7 @@
                         </div>
                     </div>
                     <x-input-error class="mb-2" :messages="$errors->get('type')" />
+                    <x-input-error class="mb-2" :messages="$errors->get('delete')" />
                     <x-input-error class="mb-2" :messages="$errors->get('status')" />
 
                     {{-- tree trunk: every node hangs off this single vertical line --}}
@@ -136,7 +136,7 @@
                                     </button>
 
                                     <div x-show="listingsOpen" class="flex-1 max-w-2xl border-l border-gray-100 pl-6" x-data="{ propertyType: '{{ old('property_type', $lead->property_type) }}' || null }">
-                                        <p class="text-[12.1px] text-gray-500 mb-2">{{ $lead->type === 'renter' ? __('What are they renting?') : __('What are they buying?') }}</p>
+                                        <p class="text-[12.1px] text-gray-500 mb-2">{{ match ($lead->type) { 'renter' => __('What are they renting?'), 'seller' => __('What are they selling?'), 'landlord' => __('What are they renting out?'), default => __('What are they buying?') } }}</p>
 
                                         <div class="flex items-center gap-6">
                                             {{-- Property type branch --}}
@@ -153,6 +153,14 @@
                                             {{-- Property search branch, only appears once a type is picked, to the right of the type branch --}}
                                             <div x-show="propertyType" x-transition class="border-l border-gray-100 pl-6">
                                                 <div class="border-l-2 border-gray-200 pl-6 w-64">
+                                                    @if ($isOwner)
+                                                        <p class="text-[12.1px] font-medium text-gray-700 mb-1">{{ __('Their listings') }}</p>
+                                                        @forelse ($lead->ownedListings as $ownedListing)
+                                                            <a href="{{ route('listings.edit', $ownedListing) }}" class="block text-[12.1px] text-gray-700 underline hover:text-gray-900">#{{ $ownedListing->id }} — {{ $ownedListing->title() }}</a>
+                                                        @empty
+                                                            <p class="text-[12.1px] text-gray-500">{{ __('Not the owner of any listing yet.') }}</p>
+                                                        @endforelse
+                                                    @else
                                                     @php
                                                         $listingTypeFilter = match ($lead->type) {
                                                             'renter' => 'rent',
@@ -166,14 +174,15 @@
                                                         'placeholder' => __('Search by address or listing ID...'),
                                                         'selected' => $lead->listings->map(fn ($listing) => [
                                                             'id' => $listing->id,
-                                                            'label' => "#{$listing->id} — {$listing->address_line}, {$listing->city}",
+                                                            'label' => "#{$listing->id} — {$listing->title()}",
                                                         ]),
                                                         'extraParamsExpr' => "'property_type=' + (propertyType || '') + '&listing_type=" . $listingTypeFilter . "'",
                                                     ])
                                                     <x-input-error class="mt-2" :messages="$errors->get('listing_ids')" />
+                                                    @endif
 
                                                     <div class="mt-4">
-                                                        <x-primary-button>{{ __('Save') }}</x-primary-button>
+                                                        <x-save-button>{{ __('Save') }}</x-save-button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -233,9 +242,9 @@
                 </p>
 
                 <div class="mt-6 flex justify-end">
-                    <x-primary-button x-on:click="$dispatch('close')">
+                    <x-save-button x-on:click="$dispatch('close')">
                         {{ __('Got it') }}
-                    </x-primary-button>
+                    </x-save-button>
                 </div>
             </div>
         </x-modal>
@@ -252,9 +261,9 @@
                 </p>
 
                 <div class="mt-6 flex justify-end">
-                    <x-primary-button x-on:click="$dispatch('close')">
+                    <x-save-button x-on:click="$dispatch('close')">
                         {{ __('Got it') }}
-                    </x-primary-button>
+                    </x-save-button>
                 </div>
             </div>
         </x-modal>

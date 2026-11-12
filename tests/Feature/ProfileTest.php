@@ -100,8 +100,8 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create();
         $buyer = Lead::factory()->for($user)->create(['type' => 'buyer']);
-        $listing = Listing::factory()->for($user)->create();
-        $owner = $listing->owner;
+        $owner = Lead::factory()->for($user)->create(['type' => 'seller']);
+        $listing = Listing::factory()->for($user)->create(['owner_lead_id' => $owner->id]);
 
         $this->actingAs($user)->delete('/profile', ['password' => 'password']);
 

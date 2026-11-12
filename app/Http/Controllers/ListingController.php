@@ -48,36 +48,27 @@ class ListingController extends Controller
     }
 
     /**
-     * Create a new listing owned by the logged-in agent, along with the
-     * lead selling or renting it out — a 'sale' listing gets a new Seller
-     * lead, a 'rent' listing gets a new Landlord lead.
+     * Create a new listing owned by the logged-in agent. Its seller (for a
+     * 'sale' listing) or landlord (for a 'rent' one) is an existing lead,
+     * picked in the form.
      */
     public function store(ListingRequest $request): RedirectResponse
     {
         $user = $request->user();
 
-        $owner = $user->leads()->create([
-            'first_name' => $request->safe()->input('owner_first_name'),
-            'last_name' => $request->safe()->input('owner_last_name'),
-            'phone' => $request->safe()->input('owner_phone'),
-            'email' => $request->safe()->input('owner_email'),
-            'type' => $request->input('listing_type') === 'rent' ? 'landlord' : 'seller',
-            'property_type' => $request->input('property_type'),
-            'status' => 'new',
-        ]);
-
         $listing = $user->listings()->create([
-            ...$request->safe()->except(['photo', 'remove_photo', 'status', 'lead_ids', 'owner_first_name', 'owner_last_name', 'owner_phone', 'owner_email']),
-            'owner_lead_id' => $owner->id,
+            ...$request->safe()->except(['photos', 'remove_photos', 'status', 'lead_ids']),
             'status' => 'available',
             'source' => 'manual',
             'currency' => $user->country === 'CA' ? 'CAD' : 'USD',
-            'photo_path' => $request->hasFile('photo') ? $request->file('photo')->store('listing-photos', 'public') : null,
         ]);
+
+        $this->savePhotos($request, $listing);
 
         $listing->leads()->sync($request->safe()->input('lead_ids', []));
 
-        return redirect()->route('listings.edit', $listing);
+        // Only the basics are asked for up front; land on the details to fill in the rest.
+        return redirect()->route('listings.edit', [$listing, 'open' => ['details']]);
     }
 
     /**
@@ -88,7 +79,11 @@ class ListingController extends Controller
         $this->authorize('update', $listing);
 
         return view('listings.edit', [
-            'listing' => $listing->load('leads', 'owner'),
+            'listing' => $listing->load('leads', 'owner', 'buyer'),
+            'owners' => $listing->user->leads()
+                ->where('type', $listing->listing_type === 'rent' ? 'landlord' : 'seller')
+                ->orderBy('first_name')->orderBy('last_name')
+                ->get(),
         ]);
     }
 
@@ -99,22 +94,11 @@ class ListingController extends Controller
     {
         $this->authorize('update', $listing);
 
-        $listing->fill($request->safe()->except(['photo', 'remove_photo', 'lead_ids']));
-
-        if ($request->boolean('remove_photo') && $listing->photo_path) {
-            Storage::disk('public')->delete($listing->photo_path);
-            $listing->photo_path = null;
-        }
-
-        if ($request->hasFile('photo')) {
-            if ($listing->photo_path) {
-                Storage::disk('public')->delete($listing->photo_path);
-            }
-
-            $listing->photo_path = $request->file('photo')->store('listing-photos', 'public');
-        }
+        $listing->fill($request->safe()->except(['photos', 'remove_photos', 'lead_ids']));
 
         $listing->save();
+
+        $this->savePhotos($request, $listing);
 
         $listing->leads()->sync($request->safe()->input('lead_ids', []));
 
@@ -124,13 +108,45 @@ class ListingController extends Controller
     }
 
     /**
+     * Apply the photo changes in the request: delete the ones marked for
+     * removal, store the new uploads after the existing ones, and keep the
+     * listing's cover photo (its first) up to date. The 6-photo limit is
+     * checked in ListingRequest.
+     */
+    private function savePhotos(ListingRequest $request, Listing $listing): void
+    {
+        $removeIds = (array) $request->input('remove_photos', []);
+        $uploads = (array) $request->file('photos', []);
+
+        if ($removeIds === [] && $uploads === []) {
+            return;
+        }
+
+        $listing->photos()->whereIn('id', $removeIds)->get()->each(function ($photo) {
+            Storage::disk('public')->delete($photo->path);
+            $photo->delete();
+        });
+
+        $position = (int) $listing->photos()->max('position');
+
+        foreach ($uploads as $upload) {
+            $listing->photos()->create([
+                'path' => $upload->store('listing-photos', 'public'),
+                'position' => ++$position,
+            ]);
+        }
+
+        $listing->syncCoverPhoto();
+    }
+
+    /**
      * Permanently delete a listing.
      */
     public function destroy(Listing $listing): RedirectResponse
     {
         $this->authorize('delete', $listing);
 
-        $listing->deleteWithOwner();
+        $listing->deleteWithPhoto();
 
         return redirect()->route('listings.index');
     }

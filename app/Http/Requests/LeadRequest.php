@@ -16,24 +16,23 @@ class LeadRequest extends FormRequest
      */
     public function rules(): array
     {
-        // Seller and Landlord leads are only ever created from the Add
-        // Listing flow (ListingController::store()), never through this
-        // form — so a new lead must be Buyer or Renter. Updating an
-        // existing lead still allows all four, since a Seller/Landlord
-        // lead created that way needs to keep saving its own details —
-        // except a lead that owns a listing (Listing::owner()) can't be
-        // switched to a different type at all, since the listing depends
-        // on it staying whichever of the two it already is. The owner form
-        // on the listing page doesn't post a type, so it's optional there:
-        // omitted leaves it untouched, anything else must match.
+        // Any of the four lead types can be created here — a Seller or
+        // Landlord is a lead like any other, picked as the owner when a
+        // listing is added. A lead that owns a listing (Listing::owner())
+        // or is its buyer (Listing::buyer()) can't be switched to a
+        // different type at all, since the listing depends on it staying
+        // whichever it already is. The
+        // owner form on the listing page doesn't post a type, so it's
+        // optional there: omitted leaves it untouched, anything else must
+        // match.
         $typeRules = match (true) {
-            (bool) $this->route('lead')?->ownedListing => ['sometimes', Rule::in([$this->route('lead')->type])],
-            $this->isMethod('post') => ['required', Rule::in(['buyer', 'renter'])],
+            $this->route('lead') && ($this->route('lead')->ownedListings()->exists() || $this->route('lead')->boughtListings()->exists()) => ['sometimes', Rule::in([$this->route('lead')->type])],
+            $this->isMethod('post') => ['required', Rule::in(['buyer', 'seller', 'renter', 'landlord'])],
             default => ['nullable', Rule::in(['buyer', 'seller', 'renter', 'landlord'])],
         };
 
         return [
-            'first_name' => ['required', 'string', 'max:255'],
+            'first_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'string', 'email', 'max:255'],

@@ -2,24 +2,26 @@
     <x-slot name="header">
         <div class="relative top-1 -left-8 h-10 flex items-center">
             <h2 class="font-semibold text-sm text-gray-200 leading-tight">
-                #{{ $listing->id }} — {{ $listing->address_line }}, {{ $listing->city }}
+                #{{ $listing->id }} — {{ $listing->title() }}
             </h2>
         </div>
     </x-slot>
 
     <div class="p-3 sm:p-4 min-h-full">
         <div class="relative p-3 sm:p-4 bg-white shadow sm:rounded-lg min-h-full flex flex-col">
-                <div>
+                <div class="flex flex-col lg:flex-row items-start gap-8">
                     @php
                         $listingTypeOptions = ['' => __('Not set'), 'sale' => __('For sale'), 'rent' => __('For rent')];
                         $propertyTypeOptions = ['' => __('Not set'), 'house' => __('House'), 'condo' => __('Condo'), 'land' => __('Land'), 'commercial' => __('Commercial')];
                         $listingStatusOptions = ['available' => __('Available'), 'pending' => __('Pending'), 'closed' => __('Closed')];
                         $owner = $listing->owner;
                         $ownerStatusOptions = $owner ? $owner->stageLabels() + ['lost' => __('Lost')] : [];
+                        $buyer = $listing->buyer;
+                        $buyerStatusOptions = $buyer ? $buyer->stageLabels() + ['lost' => __('Lost')] : [];
                     @endphp
                     <div
-                        :class="ownerProfileOpen ? 'max-w-6xl' : ((photoOpen || interestedOpen || detailsOpen) ? 'max-w-3xl' : 'max-w-xl')"
-                        class="transition-[max-width] duration-300"
+                        :class="(ownerProfileOpen || buyerProfileOpen) ? 'max-w-6xl' : (detailsOpen ? 'max-w-3xl' : 'max-w-xl')"
+                        class="flex-1 min-w-0 transition-[max-width] duration-300"
                         x-data="{
                             listingTypeVal: '{{ old('listing_type', $listing->listing_type) }}',
                             listingTypeOpen: false,
@@ -29,17 +31,23 @@
                             propertyTypeLabels: {{ Illuminate\Support\Js::from($propertyTypeOptions) }},
                             ownerOpen: {{ in_array('owner', (array) request('open', [])) ? 'true' : 'false' }},
                             ownerProfileOpen: {{ in_array('owner-profile', (array) request('open', [])) ? 'true' : 'false' }},
+                            buyerOpen: {{ in_array('buyer', (array) request('open', [])) ? 'true' : 'false' }},
+                            buyerProfileOpen: {{ in_array('buyer-profile', (array) request('open', [])) ? 'true' : 'false' }},
+                            buyerPersonalOpen: {{ in_array('buyer-personal', (array) request('open', [])) ? 'true' : 'false' }},
+                            buyerDocumentsOpen: {{ in_array('buyer-documents', (array) request('open', [])) ? 'true' : 'false' }},
+                            buyerStatusOpen: {{ in_array('buyer-status', (array) request('open', [])) ? 'true' : 'false' }},
                             personalOpen: {{ in_array('personal', (array) request('open', [])) ? 'true' : 'false' }},
                             documentsOpen: {{ in_array('documents', (array) request('open', [])) ? 'true' : 'false' }},
                             statusOpen: {{ in_array('status', (array) request('open', [])) ? 'true' : 'false' }},
-                            photoOpen: {{ in_array('photo', (array) request('open', [])) ? 'true' : 'false' }},
                             interestedOpen: {{ in_array('interested', (array) request('open', [])) ? 'true' : 'false' }},
                             detailsOpen: {{ in_array('details', (array) request('open', [])) ? 'true' : 'false' }},
                             openBranches() {
                                 return [
                                     this.ownerOpen && 'owner', this.ownerProfileOpen && 'owner-profile',
+                                    this.buyerOpen && 'buyer', this.buyerProfileOpen && 'buyer-profile', this.buyerPersonalOpen && 'buyer-personal',
+                                    this.buyerDocumentsOpen && 'buyer-documents', this.buyerStatusOpen && 'buyer-status',
                                     this.personalOpen && 'personal', this.documentsOpen && 'documents', this.statusOpen && 'status',
-                                    this.photoOpen && 'photo', this.interestedOpen && 'interested', this.detailsOpen && 'details',
+                                    this.interestedOpen && 'interested', this.detailsOpen && 'details',
                                 ].filter(Boolean).join(',');
                             },
                         }"
@@ -82,6 +90,34 @@
                                 </div>
                             </div>
 
+                            {{-- Interested leads: everyone who's looking at this listing; the buyer is picked from this list --}}
+                            <div class="relative" @click.outside="interestedOpen = false">
+                                <button type="button" @click="interestedOpen = !interestedOpen" class="flex items-center gap-1 text-[12.1px] text-gray-700 hover:text-gray-900 cursor-pointer">
+                                    <span class="font-bold text-gray-900">{{ __('Interested') }} ({{ $listing->leads->count() }})</span>
+                                    <svg class="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
+                                </button>
+
+                                <div x-show="interestedOpen" x-transition class="absolute left-0 top-full mt-1 z-30 w-72 bg-white border border-gray-200 rounded-xl shadow-lg p-4 space-y-3" style="display: none;">
+                                    @include('partials.tag-picker', [
+                                        'name' => 'lead_ids',
+                                        'form' => 'listing-form',
+                                        'searchUrl' => route('leads.search'),
+                                        'placeholder' => __('Search by lead name...'),
+                                        'extraParamsExpr' => "'lead_type=' + (listingTypeVal === 'rent' ? 'renter' : (listingTypeVal === 'sale' ? 'buyer' : ''))",
+                                        'selected' => $listing->leads->map(fn ($lead) => [
+                                            'id' => $lead->id,
+                                            'label' => $lead->name,
+                                            'variant' => $listing->leadDrivesCurrentStatus($lead) ? 'success' : null,
+                                        ]),
+                                    ])
+                                    <x-input-error class="mt-2" :messages="$errors->get('lead_ids')" />
+
+                                    <x-save-button form="listing-form">{{ __('Save') }}</x-save-button>
+                                </div>
+                            </div>
+
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-medium bg-gray-700 text-white">{{ $listingStatusOptions[$listing->status] ?? ucfirst($listing->status) }}</span>
                         </div>
                         <x-input-error class="mb-2" :messages="$errors->get('price')" />
@@ -103,13 +139,22 @@
                                 @csrf
                                 @method('patch')
                                 <input type="hidden" name="open_branches" :value="openBranches()">
+                                <input type="hidden" name="from_listing" value="{{ $listing->id }}">
+                            </form>
+                        @endif
+
+                        @if ($buyer)
+                            <form id="buyer-form" method="post" action="{{ route('leads.update', $buyer) }}">
+                                @csrf
+                                @method('patch')
+                                <input type="hidden" name="open_branches" :value="openBranches()">
+                                <input type="hidden" name="from_listing" value="{{ $listing->id }}">
                             </form>
                         @endif
 
                         {{-- tree trunk: every node hangs off this single vertical line --}}
                         <div class="border-l-2 border-gray-200 ml-2">
-                            {{-- Owner node (seller/landlord) --}}
-                            @if ($owner)
+                            {{-- Owner node (seller/landlord): always there, so one can be picked even when none is set yet --}}
                                 <div class="pl-6 -ml-px border-l-2 border-transparent py-3">
                                     <div class="flex items-start gap-6">
                                         <button type="button" @click="ownerOpen = !ownerOpen" class="shrink-0 w-36 flex items-center gap-2 text-[12.1px] font-medium" :class="ownerOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
@@ -124,9 +169,15 @@
 
                                         <div x-show="ownerOpen" class="flex-1 border-l border-gray-100 pl-6">
                                             <div class="border-l-2 border-gray-200 pl-6 flex items-start gap-6">
-                                                {{-- level 2: the owner's name, click to reveal their own tree to the right --}}
-                                                <button type="button" @click="ownerProfileOpen = !ownerProfileOpen" class="shrink-0 w-36 flex items-center gap-2 text-[12.1px] font-medium" :class="ownerProfileOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
-                                                    {{ $owner->name }}
+                                                <div class="shrink-0">
+                                                <x-dropdown-select name="owner_lead_id" form="listing-form" submit="listing-form" class="w-40 shrink-0" :options="['' => __('None yet')] + $owners->pluck('name', 'id')->all()" :selected="$listing->owner_lead_id" />
+                                                <x-input-error class="mt-2" :messages="$errors->get('owner_lead_id')" />
+                                                </div>
+                                                @if ($owner)
+                                                <div class="border-l border-gray-100 pl-6 flex items-start gap-6">
+                                                {{-- level 2: the owner's profile, click to reveal their own tree to the right --}}
+                                                <button type="button" @click="ownerProfileOpen = !ownerProfileOpen" class="shrink-0 w-36 field-h flex items-center gap-2 text-[12.1px] font-medium" :class="ownerProfileOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
+                                                    {{ __('Profile') }}
                                                     <svg class="h-3 w-3 transition-transform" :class="ownerProfileOpen ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                                                     </svg>
@@ -159,43 +210,69 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            @endif
 
-                            {{-- Interested Leads node --}}
+
+                            {{-- Buyer node (buyer/renter), picked from the agent's own leads --}}
                             <div class="pl-6 -ml-px border-l-2 border-transparent py-3">
                                 <div class="flex items-start gap-6">
-                                    <button type="button" @click="interestedOpen = !interestedOpen" class="shrink-0 w-36 flex items-center gap-2 text-[12.1px] font-medium" :class="interestedOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
+                                    <button type="button" @click="buyerOpen = !buyerOpen" class="shrink-0 w-36 flex items-center gap-2 text-[12.1px] font-medium" :class="buyerOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
                                         <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.169.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        {{ __('Interested Leads') }}
-                                        <svg class="h-3 w-3 transition-transform" :class="interestedOpen ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        {{ $listing->listing_type === 'rent' ? __('Renter') : __('Buyer') }}
+                                        <svg class="h-3 w-3 transition-transform" :class="buyerOpen ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                                         </svg>
                                     </button>
 
-                                    <div x-show="interestedOpen" class="flex-1 max-w-sm border-l border-gray-100 pl-6">
-                                        <div class="border-l-2 border-gray-200 pl-6 space-y-4">
-                                            @include('partials.tag-picker', [
-                                                'name' => 'lead_ids',
-                                                'form' => 'listing-form',
-                                                'searchUrl' => route('leads.search'),
-                                                'placeholder' => __('Search by lead name...'),
-                                                'extraParamsExpr' => "'lead_type=' + (listingTypeVal === 'rent' ? 'renter' : (listingTypeVal === 'sale' ? 'buyer' : ''))",
-                                                'selected' => $listing->leads->map(fn ($lead) => [
-                                                    'id' => $lead->id,
-                                                    'label' => $lead->name,
-                                                    'variant' => $listing->leadDrivesCurrentStatus($lead) ? 'success' : null,
-                                                ]),
-                                            ])
-                                            <x-input-error class="mt-2" :messages="$errors->get('lead_ids')" />
-
-                                            <x-primary-button form="listing-form">{{ __('Save') }}</x-primary-button>
+                                    <div x-show="buyerOpen" class="flex-1 border-l border-gray-100 pl-6">
+                                      <div class="border-l-2 border-gray-200 pl-6">
+                                        <div class="flex items-start gap-6">
+                                        <div class="shrink-0">
+                                            <x-dropdown-select name="buyer_lead_id" form="listing-form" submit="listing-form" class="w-40 shrink-0" :options="['' => $listing->leads->isEmpty() ? __('Add interested leads first') : __('None yet')] + $listing->leads->pluck('name', 'id')->all() + ($buyer ? [$buyer->id => $buyer->name] : [])" :selected="$listing->buyer_lead_id" />
+                                            <x-input-error class="mt-2" :messages="$errors->get('buyer_lead_id')" />
                                         </div>
+
+                                        @if ($buyer)
+                                            <div class="border-l border-gray-100 pl-6 flex items-start gap-6">
+                                                <button type="button" @click="buyerProfileOpen = !buyerProfileOpen" class="shrink-0 w-36 field-h flex items-center gap-2 text-[12.1px] font-medium" :class="buyerProfileOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
+                                                    {{ __('Profile') }}
+                                                    <svg class="h-3 w-3 transition-transform" :class="buyerProfileOpen ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </button>
+
+                                                <div x-show="buyerProfileOpen" class="flex-1 border-l border-gray-100 pl-6">
+                                                    <div class="border-l-2 border-gray-200 pl-6">
+                                                        {{-- Status node (read-only — it's computed from Documents) --}}
+                                                        <div class="pl-6 -ml-px border-l-2 border-transparent py-3">
+                                                            <div class="flex items-start gap-6">
+                                                                <button type="button" @click="buyerStatusOpen = !buyerStatusOpen" class="shrink-0 w-36 flex items-center gap-2 text-[12.1px] font-medium" :class="buyerStatusOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
+                                                                    {{ __('Status') }}
+                                                                    <svg class="h-3 w-3 transition-transform" :class="buyerStatusOpen ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                                                    </svg>
+                                                                </button>
+
+                                                                <div x-show="buyerStatusOpen" class="flex-1 border-l border-gray-100 pl-6">
+                                                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-medium bg-gray-700 text-white">{{ $buyerStatusOptions[$buyer->status] ?? ucfirst($buyer->status) }}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        @include('leads.partials.personal-info-branch', ['lead' => $buyer, 'form' => 'buyer-form', 'openVar' => 'buyerPersonalOpen'])
+                                                        @include('leads.partials.documents-branch', ['lead' => $buyer, 'form' => 'buyer-form', 'openVar' => 'buyerDocumentsOpen'])
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
+                                        </div>
+                                      </div>
                                     </div>
                                 </div>
                             </div>
@@ -220,7 +297,7 @@
                                             <div>
                                                 <x-input-label for="area_sqm" :value="__('Size')" class="!text-[12.1px]" />
                                                 <div class="relative mt-1">
-                                                    <input type="text" inputmode="decimal" id="area_sqm" form="listing-form" name="area_sqm" value="{{ old('area_sqm', $listing->area_sqm) }}" class="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 pr-10 !text-[12.1px]">
+                                                    <input type="text" inputmode="decimal" id="area_sqm" form="listing-form" name="area_sqm" value="{{ old('area_sqm', $listing->area_sqm) }}" class="field-slim block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 pr-10 !text-[12.1px]">
                                                     <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[12.1px] text-gray-400">m&sup2;</span>
                                                 </div>
                                                 <x-input-error class="mt-2" :messages="$errors->get('area_sqm')" />
@@ -232,51 +309,49 @@
                                                 <x-input-error class="mt-2" :messages="$errors->get('description')" />
                                             </div>
 
-                                            <x-primary-button form="listing-form">{{ __('Save') }}</x-primary-button>
+                                            <x-save-button form="listing-form">{{ __('Save') }}</x-save-button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {{-- Photo node --}}
-                            <div class="pl-6 -ml-px border-l-2 border-transparent py-3">
-                                <div class="flex items-start gap-6">
-                                    <button type="button" @click="photoOpen = !photoOpen" class="shrink-0 w-36 flex items-center gap-2 text-[12.1px] font-medium" :class="photoOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
-                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3 16.5V6a1.5 1.5 0 011.5-1.5h15A1.5 1.5 0 0121 6v10.5a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 16.5zm10.5-8.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                        </svg>
-                                        {{ __('Photo') }}
-                                        <svg class="h-3 w-3 transition-transform" :class="photoOpen ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </button>
-
-                                    <div x-show="photoOpen" class="flex-1 max-w-sm border-l border-gray-100 pl-6">
-                                        <div class="border-l-2 border-gray-200 pl-6 space-y-4">
-                                            @if ($listing->photo_path)
-                                                <div class="relative inline-block" data-photo-row>
-                                                    <img src="{{ \Illuminate\Support\Facades\Storage::url($listing->photo_path) }}" alt="" class="h-24 w-24 object-cover rounded">
-                                                    <button
-                                                        type="button"
-                                                        class="photo-remove-button absolute -top-2 -right-2 h-7 w-7 flex items-center justify-center rounded-full bg-red-600 text-white text-xs leading-none hover:bg-red-700"
-                                                        title="{{ __('Remove this photo') }}"
-                                                        aria-label="{{ __('Remove this photo') }}"
-                                                    >&times;</button>
-                                                    <input type="checkbox" form="listing-form" name="remove_photo" value="1" class="hidden">
-                                                </div>
-                                                <x-input-label for="photo" :value="__('Replace photo')" class="!text-[12.1px]" />
-                                            @endif
-
-                                            @include('listings.partials.photo-input', ['form' => 'listing-form'])
-                                            <x-input-error class="mt-2" :messages="$errors->get('photo')" />
-
-                                            <x-primary-button form="listing-form">{{ __('Save') }}</x-primary-button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
+
+                    {{-- Photos, on the right of the window: up to 6, with an obvious spot to add more.
+                         Picking files saves right away; the × on a photo removes it. --}}
+                    <aside class="w-full lg:w-[28rem] lg:ml-auto shrink-0">
+                        <p class="mb-2 text-[12.1px] text-gray-400">{{ $listing->photos->count() }}/{{ \App\Models\Listing::MAX_PHOTOS }}</p>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            @foreach ($listing->photos as $photo)
+                                <div class="relative group">
+                                    <img src="{{ $photo->url() }}" alt="{{ __('Property photo') }}" class="h-48 w-full object-cover rounded-lg shadow">
+                                    <button type="button" data-remove-photo="{{ $photo->id }}" class="absolute top-1 right-1 h-5 w-5 hidden group-hover:flex items-center justify-center rounded-full bg-gray-900/70 text-white text-xs leading-none hover:bg-red-600" title="{{ __('Remove this photo') }}" aria-label="{{ __('Remove this photo') }}">&times;</button>
+                                </div>
+                            @endforeach
+
+                            {{-- every free slot is an empty frame; clicking any of them opens the file picker --}}
+                            @for ($slot = $listing->photos->count(); $slot < \App\Models\Listing::MAX_PHOTOS; $slot++)
+                                <label for="photos" class="h-48 flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-gray-300 text-center cursor-pointer text-[12.1px] text-gray-500 hover:border-gray-400 hover:bg-gray-50 transition">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A1.5 1.5 0 0021.75 19.5V4.5A1.5 1.5 0 0020.25 3H3.75A1.5 1.5 0 002.25 4.5v15A1.5 1.5 0 003.75 21zM9 8.625a1.125 1.125 0 11-2.25 0 1.125 1.125 0 012.25 0z" />
+                                    </svg>
+                                    @if ($slot === $listing->photos->count())
+                                        {{ __('Add photos') }}
+                                    @endif
+                                </label>
+                            @endfor
+                        </div>
+
+                        {{-- one file input behind all the empty frames; picking files saves right away --}}
+                        @if ($listing->photos->count() < \App\Models\Listing::MAX_PHOTOS)
+                            <input type="file" id="photos" form="listing-form" name="photos[]" multiple accept="image/*" class="sr-only" onchange="document.getElementById('listing-form').submit()">
+                        @endif
+
+                        {{-- photos.* errors come back nested per file, so flatten them --}}
+                        <x-input-error class="mt-2" :messages="collect([...$errors->get('photos'), ...$errors->get('photos.*')])->flatten()->unique()->all()" />
+                    </aside>
                 </div>
 
                 <form
@@ -296,15 +371,17 @@
 
     <script>
         (function () {
-            var button = document.querySelector('.photo-remove-button');
-
-            if (button) {
+            document.querySelectorAll('[data-remove-photo]').forEach(function (button) {
                 button.addEventListener('click', function () {
-                    var row = button.closest('[data-photo-row]');
-                    row.querySelector('input[type="checkbox"]').checked = true;
-                    row.style.display = 'none';
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'remove_photos[]';
+                    input.value = button.dataset.removePhoto;
+                    input.setAttribute('form', 'listing-form');
+                    document.body.appendChild(input);
+                    document.getElementById('listing-form').submit();
                 });
-            }
+            });
 
             var priceInput = document.getElementById('price');
             var priceLastSaved = priceInput.value;

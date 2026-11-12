@@ -23,7 +23,7 @@
                             <input type="text" name="name" id="lead-filter-name" value="{{ request('name') }}" placeholder="{{ __("Type lead's name...") }}" autocomplete="off" class="block w-full border-0 border-b border-gray-200 focus:border-gray-300 focus:ring-0 px-0 pb-2 text-[13px] placeholder-gray-400">
 
                             <p class="pt-3 pb-1 text-xs font-medium text-gray-400">{{ __('Lead Type') }}</p>
-                            @foreach (['buyer' => 'Buyer', 'renter' => 'Renter'] as $value => $label)
+                            @foreach (['buyer' => 'Buyer', 'renter' => 'Renter', 'seller' => 'Seller', 'landlord' => 'Landlord'] as $value => $label)
                                 <label class="flex items-center justify-between py-1.5 text-[13px] text-gray-900">
                                     {{ __($label) }}
                                     <input type="checkbox" name="type[]" value="{{ $value }}" class="lead-filter-field h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-0" @checked(in_array($value, (array) request('type', [])))>
@@ -110,45 +110,23 @@
             </h2>
 
             <div>
-                <x-input-label :value="__('Buying or renting?')" class="!text-[12.1px]" />
+                <x-input-label :value="__('Lead type')" class="!text-[12.1px]" />
                 <input type="hidden" name="type" :value="type">
                 <div class="mt-1 flex items-center gap-2">
                     <button type="button" @click="type = 'buyer'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="type === 'buyer' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Buyer') }}</button>
                     <button type="button" @click="type = 'renter'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="type === 'renter' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Renter') }}</button>
+                    <button type="button" @click="type = 'seller'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="type === 'seller' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Seller') }}</button>
+                    <button type="button" @click="type = 'landlord'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="type === 'landlord' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Landlord') }}</button>
                 </div>
                 <x-input-error class="mt-2" :messages="$errors->get('type')" />
             </div>
 
-            <div>
-                <x-input-label for="first_name" :value="__('First name')" class="!text-[12.1px]" />
-                <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full !text-[12.1px]" :value="old('first_name')" required />
-                <x-input-error class="mt-2" :messages="$errors->get('first_name')" />
-            </div>
-
-            <div>
-                <x-input-label for="last_name" :value="__('Last name')" class="!text-[12.1px]" />
-                <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full !text-[12.1px]" :value="old('last_name')" />
-                <x-input-error class="mt-2" :messages="$errors->get('last_name')" />
-            </div>
-
-            <div>
-                <x-input-label for="phone" :value="__('Phone')" class="!text-[12.1px]" />
-                <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full !text-[12.1px]" :value="old('phone')" />
-                <x-input-error class="mt-2" :messages="$errors->get('phone')" />
-            </div>
-
-            <div>
-                <x-input-label for="email" :value="__('Email')" class="!text-[12.1px]" />
-                <x-text-input id="email" name="email" type="email" class="mt-1 block w-full !text-[12.1px]" :value="old('email')" />
-                <x-input-error class="mt-2" :messages="$errors->get('email')" />
-            </div>
-
             <div class="flex justify-end gap-3">
-                <x-secondary-button type="button" x-on:click="$dispatch('close')">
+                <x-cancel-button x-on:click="$dispatch('close')">
                     {{ __('Cancel') }}
-                </x-secondary-button>
+                </x-cancel-button>
 
-                <x-primary-button>{{ __('Add lead') }}</x-primary-button>
+                <x-save-button>{{ __('Add lead') }}</x-save-button>
             </div>
         </form>
     </x-modal>

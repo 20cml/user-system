@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'user_id', 'first_name', 'last_name', 'phone', 'email', 'status', 'type', 'property_type',
@@ -40,7 +39,7 @@ class Lead extends Model
     protected function name(): Attribute
     {
         return Attribute::make(
-            get: fn () => trim("{$this->first_name} {$this->last_name}"),
+            get: fn () => trim("{$this->first_name} {$this->last_name}") ?: __('New lead'),
         );
     }
 
@@ -55,12 +54,21 @@ class Lead extends Model
     }
 
     /**
-     * The listing this lead is the seller/landlord of, if any — the reverse
-     * of Listing::owner(). A lead can own at most one listing.
+     * The listings this lead is the seller/landlord of — the reverse of
+     * Listing::owner(). A seller/landlord can own several.
      */
-    public function ownedListing(): HasOne
+    public function ownedListings(): HasMany
     {
-        return $this->hasOne(Listing::class, 'owner_lead_id');
+        return $this->hasMany(Listing::class, 'owner_lead_id');
+    }
+
+    /**
+     * The listings this lead has been picked as the buyer (or renter) of —
+     * the reverse of Listing::buyer().
+     */
+    public function boughtListings(): HasMany
+    {
+        return $this->hasMany(Listing::class, 'buyer_lead_id');
     }
 
     public function notes(): HasMany

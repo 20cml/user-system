@@ -18,10 +18,9 @@ class LeadSearchController extends Controller
         $leadType = $request->query('lead_type');
 
         $leads = $request->user()->leads()
-            // Seller/Landlord leads belong to the listing they're already
-            // tied to (Listing::owner()) — they can't also be an "Interested
-            // Lead" on a listing, so they're excluded here just like they
-            // are from "My Leads" (see LeadController::index()).
+            // Seller/Landlord leads are a listing's owner (Listing::owner()),
+            // picked in the listing form — they can't also be an "Interested
+            // Lead" on a listing, so they're excluded from this picker.
             ->where(fn ($builder) => $builder->whereNotIn('type', ['seller', 'landlord'])->orWhereNull('type'))
             // A rental listing only takes Renter leads and a sale listing only
             // Buyer leads — the picker passes the matching type.

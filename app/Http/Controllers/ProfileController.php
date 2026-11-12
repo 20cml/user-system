@@ -58,11 +58,10 @@ class ProfileController extends Controller
 
         Auth::logout();
 
-        // Explicit cleanup rather than relying on the database's multi-hop
-        // cascade ordering: a listing's owner_lead_id (restrictOnDelete)
-        // can otherwise survive a plain $user->delete(), leaving that lead
-        // behind even though everything else the user owns is gone.
-        $user->listings()->get()->each->deleteWithOwner();
+        // Listings go first: a listing's owner_lead_id is restrictOnDelete,
+        // so the database would otherwise refuse to cascade-delete the
+        // user's leads while listings still point at them.
+        $user->listings()->get()->each->deleteWithPhoto();
 
         $user->delete();
 

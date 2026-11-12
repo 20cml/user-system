@@ -20,14 +20,7 @@ class LeadController extends Controller
      */
     public function index(Request $request): View|JsonResponse
     {
-        // Seller and Landlord leads are owned by a listing (Listing::owner())
-        // and managed from that listing's own edit page — "My Leads" only
-        // ever shows the leads interested in listings (Buyer, Renter, or not
-        // yet typed), never a listing's own Seller/Landlord. `type` is
-        // nullable, and SQL's NOT IN excludes NULL rows entirely, so that
-        // case is spelled out explicitly rather than silently dropped.
         $leads = $request->user()->leads()
-            ->where(fn ($query) => $query->whereNotIn('type', ['seller', 'landlord'])->orWhereNull('type'))
             ->orderBy('first_name')->orderBy('last_name');
 
         if ($statuses = $request->query('status')) {
@@ -71,23 +64,19 @@ class LeadController extends Controller
 
         $lead->listings()->sync($request->safe()->input('listing_ids', []));
 
-        return redirect()->route('leads.edit', $lead);
+        // Only the type is asked for up front; land on Personal Info to fill in the rest.
+        return redirect()->route('leads.edit', [$lead, 'open' => ['personal']]);
     }
 
     /**
-     * Show the form for editing an existing lead. A Seller/Landlord lead has
-     * no page of its own — it's managed from the listing it belongs to.
+     * Show the form for editing an existing lead.
      */
-    public function edit(Lead $lead): View|RedirectResponse
+    public function edit(Lead $lead): View
     {
         $this->authorize('update', $lead);
 
-        if ($lead->ownedListing) {
-            return redirect()->route('listings.edit', $lead->ownedListing);
-        }
-
         return view('leads.edit', [
-            'lead' => $lead->load('listings', 'notes', 'documents', 'ownedListing'),
+            'lead' => $lead->load('listings', 'notes', 'documents', 'ownedListings'),
         ]);
     }
 
@@ -106,11 +95,16 @@ class LeadController extends Controller
 
         $openBranches = array_filter(explode(',', (string) $request->input('open_branches')));
 
-        // A Seller/Landlord lead has no page of its own — it's managed from
-        // the listing it belongs to (see listings/edit.blade.php's Owner
-        // branch), so send its saves back there instead.
-        if ($lead->ownedListing) {
-            return redirect()->route('listings.edit', [$lead->ownedListing, 'open' => $openBranches]);
+        // The listing page embeds its seller's and buyer's forms
+        // (listings/edit.blade.php) and says which listing they came from,
+        // so those saves go back there instead of to the lead's own page.
+        $fromListing = $request->filled('from_listing')
+            ? ($lead->ownedListings()->find($request->input('from_listing'))
+                ?? $lead->boughtListings()->find($request->input('from_listing')))
+            : null;
+
+        if ($fromListing) {
+            return redirect()->route('listings.edit', [$fromListing, 'open' => $openBranches]);
         }
 
         return redirect()->route('leads.edit', [$lead, 'open' => $openBranches]);
@@ -122,6 +116,14 @@ class LeadController extends Controller
     public function destroy(Lead $lead): RedirectResponse
     {
         $this->authorize('delete', $lead);
+
+        // The listing's owner_lead_id is restrictOnDelete: a seller/landlord
+        // can't go while any listing still points at them.
+        if ($lead->ownedListings()->exists()) {
+            return back()->withErrors([
+                'delete' => __('This lead owns listings. Delete or reassign those listings first.'),
+            ]);
+        }
 
         $lead->delete();
 

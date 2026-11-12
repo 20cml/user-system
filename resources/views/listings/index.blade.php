@@ -121,7 +121,7 @@
                             <span class="font-semibold text-gray-900">{{ $listing->price !== null ? "{$listing->currency} " . number_format($listing->price, 2) : __('Price not set') }}</span>
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-normal bg-gray-100 text-gray-700">{{ ucfirst($listing->status) }}</span>
                         </div>
-                        <p class="text-sm text-gray-700">{{ $listing->address_line }}, {{ $listing->city }}</p>
+                        <p class="text-sm text-gray-700">{{ $listing->title() }}</p>
                         <p class="text-xs text-gray-500">{{ $listing->listing_type ? ucfirst($listing->listing_type) : __('Not set') }} &middot; {{ $listing->property_type ? ucfirst($listing->property_type) : __('Not set') }}</p>
                         <p class="text-xs text-gray-600">{{ __('Added') }} {{ $listing->created_at->format('M j, Y') }}</p>
                     </div>
@@ -154,9 +154,8 @@
             </h2>
 
             <div>
-                <x-input-label :value="__('Selling or renting?')" class="!text-[12.1px]" />
                 <input type="hidden" name="listing_type" :value="listingType">
-                <div class="mt-1 flex items-center gap-2">
+                <div class="flex items-center gap-2" role="group" aria-label="{{ __('Selling or renting?') }}">
                     <button type="button" @click="listingType = 'sale'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="listingType === 'sale' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Selling') }}</button>
                     <button type="button" @click="listingType = 'rent'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="listingType === 'rent' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Renting') }}</button>
                 </div>
@@ -164,9 +163,8 @@
             </div>
 
             <div>
-                <x-input-label :value="__('Property type')" class="!text-[12.1px]" />
                 <input type="hidden" name="property_type" :value="propertyType">
-                <div class="mt-1 flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2" role="group" aria-label="{{ __('Property type') }}">
                     <button type="button" @click="propertyType = 'condo'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="propertyType === 'condo' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Condo') }}</button>
                     <button type="button" @click="propertyType = 'house'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="propertyType === 'house' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('House') }}</button>
                     <button type="button" @click="propertyType = 'land'" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="propertyType === 'land' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Land') }}</button>
@@ -175,84 +173,13 @@
                 <x-input-error class="mt-2" :messages="$errors->get('property_type')" />
             </div>
 
-            <p class="text-[12.1px] font-medium text-gray-700 pt-2 border-t border-gray-100">
-                {{ __("Who's selling or renting it out?") }}
-            </p>
-
-            <div>
-                <x-input-label for="owner_first_name" :value="__('First name')" class="!text-[12.1px]" />
-                <x-text-input id="owner_first_name" name="owner_first_name" type="text" class="mt-1 block w-full !text-[12.1px]" :value="old('owner_first_name')" required />
-                <x-input-error class="mt-2" :messages="$errors->get('owner_first_name')" />
-            </div>
-
-            <div>
-                <x-input-label for="owner_last_name" :value="__('Last name')" class="!text-[12.1px]" />
-                <x-text-input id="owner_last_name" name="owner_last_name" type="text" class="mt-1 block w-full !text-[12.1px]" :value="old('owner_last_name')" />
-                <x-input-error class="mt-2" :messages="$errors->get('owner_last_name')" />
-            </div>
-
-            <div>
-                <x-input-label for="owner_phone" :value="__('Phone')" class="!text-[12.1px]" />
-                <x-text-input id="owner_phone" name="owner_phone" type="text" class="mt-1 block w-full !text-[12.1px]" :value="old('owner_phone')" />
-                <x-input-error class="mt-2" :messages="$errors->get('owner_phone')" />
-            </div>
-
-            <div>
-                <x-input-label for="owner_email" :value="__('Email')" class="!text-[12.1px]" />
-                <x-text-input id="owner_email" name="owner_email" type="email" class="mt-1 block w-full !text-[12.1px]" :value="old('owner_email')" />
-                <x-input-error class="mt-2" :messages="$errors->get('owner_email')" />
-            </div>
-
-            <p class="text-[12.1px] font-medium text-gray-700 pt-2 border-t border-gray-100">
-                {{ __('Property Details') }}
-            </p>
-
-            <div>
-                <x-input-label for="price" :value="__('Price')" class="!text-[12.1px]" />
-                <input type="text" inputmode="numeric" id="price" name="price" value="{{ old('price') !== null ? number_format((float) old('price')) : '' }}" class="price-input mt-1 block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 !text-[12.1px]">
-                <x-input-error class="mt-2" :messages="$errors->get('price')" />
-            </div>
-
-            @include('listings.partials.address-fields', ['listing' => null])
-
-            <div>
-                <x-input-label for="area_sqm" :value="__('Size')" class="!text-[12.1px]" />
-                <div class="relative mt-1">
-                    <input type="text" inputmode="decimal" id="area_sqm" name="area_sqm" value="{{ old('area_sqm') }}" class="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 pr-10 !text-[12.1px]">
-                    <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[12.1px] text-gray-400">m&sup2;</span>
-                </div>
-                <x-input-error class="mt-2" :messages="$errors->get('area_sqm')" />
-            </div>
-
-            <div>
-                <x-input-label for="description" :value="__('Description')" class="!text-[12.1px]" />
-                <textarea id="description" name="description" rows="4" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm !text-[12.1px]">{{ old('description') }}</textarea>
-                <x-input-error class="mt-2" :messages="$errors->get('description')" />
-            </div>
-
             <div class="flex justify-end gap-3">
-                <x-secondary-button type="button" x-on:click="$dispatch('close')">
+                <x-cancel-button x-on:click="$dispatch('close')">
                     {{ __('Cancel') }}
-                </x-secondary-button>
+                </x-cancel-button>
 
-                <x-primary-button>{{ __('Add listing') }}</x-primary-button>
+                <x-save-button>{{ __('Add listing') }}</x-save-button>
             </div>
         </form>
     </x-modal>
-
-    <script>
-        (function () {
-            var priceInput = document.getElementById('price');
-            var form = priceInput.closest('form');
-
-            priceInput.addEventListener('input', function () {
-                var digits = priceInput.value.replace(/\D/g, '');
-                priceInput.value = digits ? Number(digits).toLocaleString('en-US') : '';
-            });
-
-            form.addEventListener('submit', function () {
-                priceInput.value = priceInput.value.replace(/\D/g, '');
-            });
-        })();
-    </script>
 </x-app-layout>

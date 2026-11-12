@@ -30,7 +30,7 @@ class LeadTest extends TestCase
         $response = $this->actingAs($user)->post('/leads', $this->leadData(['type' => 'buyer']));
 
         $lead = Lead::first();
-        $response->assertRedirect("/leads/{$lead->id}/edit");
+        $response->assertRedirect(route('leads.edit', [$lead, 'open' => ['personal']]));
         $this->assertDatabaseHas('leads', [
             'user_id' => $user->id,
             'first_name' => 'Jane',
@@ -43,7 +43,7 @@ class LeadTest extends TestCase
         $index->assertSee('Jane Doe');
     }
 
-    public function test_a_listings_seller_or_landlord_never_appears_in_my_leads(): void
+    public function test_sellers_and_landlords_appear_in_my_leads_like_any_other_lead(): void
     {
         $user = User::factory()->create();
         Lead::factory()->for($user)->create(['type' => 'seller', 'first_name' => 'Sonia', 'last_name' => 'Seller']);
@@ -53,8 +53,8 @@ class LeadTest extends TestCase
         $index = $this->actingAs($user)->get('/leads');
 
         $index->assertOk();
-        $index->assertDontSee('Sonia Seller');
-        $index->assertDontSee('Larry Landlord');
+        $index->assertSee('Sonia Seller');
+        $index->assertSee('Larry Landlord');
         $index->assertSee('Bruno Buyer');
     }
 
@@ -69,15 +69,38 @@ class LeadTest extends TestCase
         $index->assertSee('No Type');
     }
 
-    public function test_visiting_a_listing_owners_edit_page_directly_redirects_to_the_listing(): void
+    public function test_a_seller_has_its_own_edit_page_listing_the_properties_they_own(): void
+    {
+        $user = User::factory()->create();
+        $owner = Lead::factory()->for($user)->create(['type' => 'seller', 'property_type' => 'condo']);
+        $listing = Listing::factory()->for($user)->create(['owner_lead_id' => $owner->id, 'listing_type' => 'sale', 'address_line' => '9 Owned Ave']);
+
+        $response = $this->actingAs($user)->get("/leads/{$owner->id}/edit?open=listings");
+
+        $response->assertOk();
+        $response->assertSee('9 Owned Ave');
+    }
+
+    public function test_a_lead_that_owns_listings_cannot_be_deleted(): void
     {
         $user = User::factory()->create();
         $owner = Lead::factory()->for($user)->create(['type' => 'seller']);
-        $listing = Listing::factory()->for($user)->create(['owner_lead_id' => $owner->id, 'listing_type' => 'sale']);
+        Listing::factory()->for($user)->create(['owner_lead_id' => $owner->id, 'listing_type' => 'sale']);
 
-        $response = $this->actingAs($user)->get("/leads/{$owner->id}/edit");
+        $response = $this->actingAs($user)->delete("/leads/{$owner->id}");
 
-        $response->assertRedirect("/listings/{$listing->id}/edit");
+        $response->assertSessionHasErrors('delete');
+        $this->assertNotNull($owner->fresh());
+    }
+
+    public function test_a_seller_without_listings_can_be_deleted(): void
+    {
+        $user = User::factory()->create();
+        $owner = Lead::factory()->for($user)->create(['type' => 'seller']);
+
+        $this->actingAs($user)->delete("/leads/{$owner->id}");
+
+        $this->assertNull($owner->fresh());
     }
 
     public function test_index_can_be_filtered_by_status(): void
@@ -106,11 +129,11 @@ class LeadTest extends TestCase
         $response->assertDontSee('Bruno Silva');
     }
 
-    public function test_a_lead_can_be_created_as_buyer_or_renter(): void
+    public function test_a_lead_can_be_created_as_buyer_renter_seller_or_landlord(): void
     {
         $user = User::factory()->create();
 
-        foreach (['buyer', 'renter'] as $type) {
+        foreach (['buyer', 'renter', 'seller', 'landlord'] as $type) {
             $this->actingAs($user)->post('/leads', $this->leadData(['type' => $type, 'email' => "{$type}@example.com"]));
 
             $this->assertDatabaseHas('leads', [
@@ -121,16 +144,14 @@ class LeadTest extends TestCase
         }
     }
 
-    public function test_a_lead_cannot_be_created_as_seller_or_landlord(): void
+    public function test_a_lead_cannot_be_created_with_an_unknown_type(): void
     {
         $user = User::factory()->create();
 
-        foreach (['seller', 'landlord'] as $type) {
-            $response = $this->actingAs($user)->post('/leads', $this->leadData(['type' => $type, 'email' => "{$type}@example.com"]));
+        $response = $this->actingAs($user)->post('/leads', $this->leadData(['type' => 'agent', 'email' => 'agent@example.com']));
 
-            $response->assertSessionHasErrors('type');
-            $this->assertDatabaseMissing('leads', ['email' => "{$type}@example.com"]);
-        }
+        $response->assertSessionHasErrors('type');
+        $this->assertDatabaseMissing('leads', ['email' => 'agent@example.com']);
     }
 
     public function test_an_existing_seller_or_landlord_lead_can_still_be_updated(): void
@@ -892,17 +913,29 @@ class LeadTest extends TestCase
         $this->assertSame('rented', $lead->fresh()->status);
     }
 
-    public function test_missing_first_name_is_rejected(): void
+    public function test_a_lead_needs_only_its_type_to_be_created(): void
     {
         $user = User::factory()->create();
 
-        $data = $this->leadData();
-        unset($data['first_name']);
+        $response = $this->actingAs($user)->post('/leads', ['type' => 'seller']);
 
-        $response = $this->actingAs($user)->post('/leads', $data);
+        $response->assertSessionHasNoErrors();
+        $lead = Lead::first();
+        $this->assertNotNull($lead);
+        $this->assertNull($lead->first_name);
+        $this->assertSame('seller', $lead->type);
+        $this->assertSame('new', $lead->status);
+        $response->assertRedirect(route('leads.edit', [$lead, 'open' => ['personal']]));
+    }
 
-        $response->assertSessionHasErrors('first_name');
-        $this->assertDatabaseCount('leads', 0);
+    public function test_a_lead_without_a_name_shows_a_placeholder(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user)->post('/leads', ['type' => 'buyer']);
+        $lead = Lead::first();
+
+        $this->actingAs($user)->get('/leads')->assertSee('New lead');
+        $this->assertSame('New lead', $lead->name);
     }
 
     public function test_linking_a_lead_to_listings_on_create_is_visible_on_edit(): void
