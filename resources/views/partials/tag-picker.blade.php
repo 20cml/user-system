@@ -4,7 +4,7 @@
 @endphp
 
 <div class="tag-picker relative" data-search-url="{{ $searchUrl }}" data-field-name="{{ $name }}" @if ($form) data-form="{{ $form }}" @endif @if (isset($extraParamsExpr)) :data-extra-params="{{ $extraParamsExpr }}" @endif>
-    <input type="text" class="field-slim tag-picker-input mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm !text-[12.1px]" placeholder="{{ $placeholder }}" autocomplete="off">
+    <input type="text" class="field-slim tag-picker-input mt-1 block border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm !text-[12.1px]" placeholder="{{ $placeholder }}" autocomplete="off">
     <div class="tag-picker-suggestions absolute z-10 mt-1 w-full text-[12.1px] max-h-48 overflow-y-auto rounded-md bg-white shadow-lg empty:hidden"></div>
     <div class="tag-picker-chips mt-2 flex flex-wrap gap-2">
         @foreach ($selected as $item)

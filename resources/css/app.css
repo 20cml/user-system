@@ -3,13 +3,22 @@
 @tailwind utilities;
 
 /*
- * One place for the height of form fields. `.field-slim` is for inputs and
- * selects, `.field-h` for anything that has to line up with them (the Save
- * button, the seller/buyer name beside its selector). Change --field-height
- * and every one of them follows.
+ * One place for the size of form fields. `.field-slim` is for inputs and
+ * selects: always --field-width wide (shrinking only when the space left is
+ * smaller), so a field is the same width on every page. `.field-h` is for
+ * anything that has to line up with them (the Save button, the seller/buyer
+ * name beside its selector). Change --field-height or --field-width and every
+ * one of them follows.
  */
 :root {
     --field-height: 1.75rem;
+    --field-width: 18.75rem;
+
+    /* The branch tree (listing / lead pages): spacing between its columns follows the
+       window width, so the tree shrinks as the window does and grows back when it widens. */
+    --tree-gap: clamp(0.5rem, 1vw, 1.5rem);
+    --tree-title: 9rem; /* fits the longest title ("Property Details") on one line */
+    --tree-select: clamp(7rem, 11vw, 10rem);
 }
 
 @layer components {
@@ -17,9 +26,36 @@
         height: var(--field-height);
     }
 
+    /* Same width as a field, for things that are taller than one line (the listing description). */
+    .field-w {
+        width: var(--field-width);
+        max-width: 100%;
+    }
+
     .field-slim {
         height: var(--field-height);
         padding-top: 0;
         padding-bottom: 0;
+        width: var(--field-width);
+        max-width: 100%;
+    }
+
+    /* Branch tree: gap between columns, indent of a nested level, width of a node's title
+       column, width of the seller/buyer selector. Sizes live in :root above. */
+    .tree-gap {
+        gap: var(--tree-gap);
+    }
+
+    .tree-indent {
+        padding-left: var(--tree-gap);
+    }
+
+    .tree-title {
+        width: var(--tree-title);
+        white-space: nowrap;
+    }
+
+    .tree-select {
+        width: var(--tree-select);
     }
 }

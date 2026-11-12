@@ -22,7 +22,7 @@
                         <form method="get" action="{{ route('listings.index') }}" class="space-y-3">
                             <div>
                                 <label for="filter_status" class="block pb-1 text-xs font-medium text-gray-400">{{ __('Status') }}</label>
-                                <select id="filter_status" name="status" onchange="this.form.submit()" class="block w-full border-gray-300 focus:border-gray-400 focus:ring-0 rounded-md text-[13px]">
+                                <select id="filter_status" name="status" onchange="this.form.submit()" class="field-slim block border-gray-300 focus:border-gray-400 focus:ring-0 rounded-md text-[13px]">
                                     <option value="">{{ __('Any') }}</option>
                                     <option value="available" @selected(request('status') === 'available')>{{ __('Available') }}</option>
                                     <option value="pending" @selected(request('status') === 'pending')>{{ __('Pending') }}</option>
@@ -32,7 +32,7 @@
 
                             <div>
                                 <label for="filter_listing_type" class="block pb-1 text-xs font-medium text-gray-400">{{ __('Listing type') }}</label>
-                                <select id="filter_listing_type" name="listing_type" onchange="this.form.submit()" class="block w-full border-gray-300 focus:border-gray-400 focus:ring-0 rounded-md text-[13px]">
+                                <select id="filter_listing_type" name="listing_type" onchange="this.form.submit()" class="field-slim block border-gray-300 focus:border-gray-400 focus:ring-0 rounded-md text-[13px]">
                                     <option value="">{{ __('Any') }}</option>
                                     <option value="sale" @selected(request('listing_type') === 'sale')>{{ __('For sale') }}</option>
                                     <option value="rent" @selected(request('listing_type') === 'rent')>{{ __('For rent') }}</option>
@@ -41,7 +41,7 @@
 
                             <div>
                                 <label for="filter_property_type" class="block pb-1 text-xs font-medium text-gray-400">{{ __('Property type') }}</label>
-                                <select id="filter_property_type" name="property_type" onchange="this.form.submit()" class="block w-full border-gray-300 focus:border-gray-400 focus:ring-0 rounded-md text-[13px]">
+                                <select id="filter_property_type" name="property_type" onchange="this.form.submit()" class="field-slim block border-gray-300 focus:border-gray-400 focus:ring-0 rounded-md text-[13px]">
                                     <option value="">{{ __('Any') }}</option>
                                     <option value="house" @selected(request('property_type') === 'house')>{{ __('House') }}</option>
                                     <option value="condo" @selected(request('property_type') === 'condo')>{{ __('Condo') }}</option>
@@ -55,14 +55,14 @@
                                     <label for="min_price" class="block pb-1 text-xs font-medium text-gray-400">{{ __('Min price') }}</label>
                                     <div class="relative">
                                         <span class="pointer-events-none absolute inset-y-0 left-2 flex items-center text-[13px] text-gray-400">$</span>
-                                        <input type="text" inputmode="numeric" id="min_price" name="min_price" value="{{ request('min_price') ? number_format((float) request('min_price')) : '' }}" class="price-filter-input block w-full rounded-md border-gray-300 pl-5 text-[13px] focus:!border-red-500 focus:!ring-red-500">
+                                        <input type="text" inputmode="numeric" id="min_price" name="min_price" value="{{ request('min_price') ? number_format((float) request('min_price')) : '' }}" class="field-slim price-filter-input block rounded-md border-gray-300 pl-5 text-[13px] focus:!border-red-500 focus:!ring-red-500">
                                     </div>
                                 </div>
                                 <div>
                                     <label for="max_price" class="block pb-1 text-xs font-medium text-gray-400">{{ __('Max price') }}</label>
                                     <div class="relative">
                                         <span class="pointer-events-none absolute inset-y-0 left-2 flex items-center text-[13px] text-gray-400">$</span>
-                                        <input type="text" inputmode="numeric" id="max_price" name="max_price" value="{{ request('max_price') ? number_format((float) request('max_price')) : '' }}" class="price-filter-input block w-full rounded-md border-gray-300 pl-5 text-[13px] focus:!border-red-500 focus:!ring-red-500">
+                                        <input type="text" inputmode="numeric" id="max_price" name="max_price" value="{{ request('max_price') ? number_format((float) request('max_price')) : '' }}" class="field-slim price-filter-input block rounded-md border-gray-300 pl-5 text-[13px] focus:!border-red-500 focus:!ring-red-500">
                                     </div>
                                 </div>
                             </div>
