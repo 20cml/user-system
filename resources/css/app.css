@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * One place for the height of form fields. `.field-slim` is for inputs and
+ * selects, `.field-h` for anything that has to line up with them (the Save
+ * button, the seller/buyer name beside its selector). Change --field-height
+ * and every one of them follows.
+ */
+:root {
+    --field-height: 1.75rem;
+}
+
+@layer components {
+    .field-h {
+        height: var(--field-height);
+    }
+
+    .field-slim {
+        height: var(--field-height);
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+}
