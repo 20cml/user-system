@@ -41,6 +41,11 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'address' => [
+        // Which address-lookup provider the app uses: 'geoapify' or 'fake'.
+        'provider' => env('ADDRESS_PROVIDER', 'geoapify'),
+    ],
+
     'geoapify' => [
         'key' => env('GEOAPIFY_API_KEY'),
     ],
