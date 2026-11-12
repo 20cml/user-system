@@ -81,6 +81,12 @@ class Listing extends Model
         $this->save();
     }
 
+    public function notes(): HasMany
+    {
+        // id, not created_at: two notes added within the same second share a timestamp.
+        return $this->hasMany(ListingNote::class)->latest('id');
+    }
+
     public function leads(): BelongsToMany
     {
         return $this->belongsToMany(Lead::class, 'lead_listing');

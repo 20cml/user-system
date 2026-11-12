@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ListingRequest;
 use App\Models\Lead;
 use App\Models\Listing;
+use App\Models\ListingNote;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -149,5 +150,33 @@ class ListingController extends Controller
         $listing->deleteWithPhoto();
 
         return redirect()->route('listings.index');
+    }
+
+    /**
+     * Add a timestamped note to a listing.
+     */
+    public function storeNote(Request $request, Listing $listing): RedirectResponse
+    {
+        $this->authorize('update', $listing);
+
+        $request->validate(['body' => ['required', 'string']]);
+
+        $listing->notes()->create(['body' => $request->input('body')]);
+
+        return redirect()->route('listings.edit', $listing);
+    }
+
+    /**
+     * Permanently delete a note from a listing.
+     */
+    public function destroyNote(Listing $listing, ListingNote $note): RedirectResponse
+    {
+        $this->authorize('update', $listing);
+
+        abort_unless($note->listing_id === $listing->id, 404);
+
+        $note->delete();
+
+        return redirect()->route('listings.edit', $listing);
     }
 }

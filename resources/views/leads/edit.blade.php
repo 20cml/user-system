@@ -10,65 +10,9 @@
     <div class="p-3 sm:p-4 min-h-full">
         <div class="relative p-3 sm:p-4 bg-white shadow sm:rounded-lg min-h-full flex flex-col">
                 <div x-data="{ notesOpen: false }">
-                    {{-- Levi's-style tab, sticks out from the right edge of the white card --}}
-                    <button
-                        type="button"
-                        @click="notesOpen = !notesOpen"
-                        class="absolute right-0 top-8 z-30 [writing-mode:vertical-rl] px-1 py-1.5 bg-red-600 text-white text-[10px] font-bold tracking-wider uppercase rounded-l-md shadow-lg hover:bg-red-700 transition"
-                    >
-                        {{ __('Notes') }}
-                    </button>
-
-                    {{-- notes panel, slides out when the tab is clicked --}}
-                    <div
-                        x-show="notesOpen"
-                        x-transition:enter="transition ease-out duration-200"
-                        x-transition:enter-start="opacity-0 translate-x-4"
-                        x-transition:enter-end="opacity-100 translate-x-0"
-                        x-transition:leave="transition ease-in duration-150"
-                        x-transition:leave-start="opacity-100 translate-x-0"
-                        x-transition:leave-end="opacity-0 translate-x-4"
-                        @click.outside="notesOpen = false"
-                        class="absolute right-10 top-4 z-30 w-64 bg-yellow-50 border border-yellow-200 rounded-lg shadow-lg pt-2 pl-3 pr-3 pb-4"
-                        style="display: none;"
-                    >
-                        <h3 class="text-[12.1px] font-semibold text-yellow-900 mb-2">{{ __('Notes') }}</h3>
-
-                        <form method="post" action="{{ route('leads.notes.store', $lead) }}" class="space-y-2 mb-3">
-                            @csrf
-                            <div class="relative">
-                                <textarea name="body" rows="2" class="block w-full bg-white border-yellow-200 focus:border-yellow-400 focus:ring-yellow-400 rounded-md shadow-sm pr-9 !text-[12.1px]" placeholder="{{ __('Log a call, message, or visit...') }}"></textarea>
-                                <button type="submit" class="absolute bottom-1.5 right-1.5 h-6 w-6 flex items-center justify-center rounded-full bg-yellow-400 text-white hover:bg-yellow-500" aria-label="{{ __('Add note') }}" title="{{ __('Add note') }}">
-                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <x-input-error :messages="$errors->get('body')" />
-                        </form>
-
-                        <div class="space-y-1 max-h-64 overflow-y-auto">
-                            @forelse ($lead->notes as $note)
-                                <div class="text-[12.1px] bg-white/70 rounded-md p-1.5 flex items-start justify-between gap-2">
-                                    <div>
-                                        <p class="text-gray-800">{{ $note->body }}</p>
-                                        <p class="text-[11px] text-gray-400">{{ $note->created_at->format('M j, Y g:ia') }}</p>
-                                    </div>
-                                    <form
-                                        method="post"
-                                        action="{{ route('leads.notes.destroy', [$lead, $note]) }}"
-                                        onsubmit="return confirm('{{ __('Delete this note?') }}');"
-                                    >
-                                        @csrf
-                                        @method('delete')
-                                        <button type="submit" class="text-[12.1px] text-red-600 hover:text-red-800" aria-label="{{ __('Delete') }}">&times;</button>
-                                    </form>
-                                </div>
-                            @empty
-                                <p class="text-[12.1px] text-yellow-700/70">{{ __('No notes yet.') }}</p>
-                            @endforelse
-                        </div>
-                    </div>
+                    <x-side-tab open="notesOpen" :label="__('Notes')">
+                        @include('partials.notes-panel', ['subject' => $lead, 'routePrefix' => 'leads'])
+                    </x-side-tab>
                 </div>
 
                 <div :class="(personalOpen || listingsOpen || documentsOpen) ? 'max-w-3xl' : 'max-w-sm'" class="transition-[max-width] duration-300" x-data="{ personalOpen: {{ in_array('personal', (array) request('open', [])) ? 'true' : 'false' }}, listingsOpen: {{ (in_array('listings', (array) request('open', [])) || $lead->needsListingNarrowed() || $lead->blockingUnderContractLead()) ? 'true' : 'false' }}, documentsOpen: {{ in_array('documents', (array) request('open', [])) ? 'true' : 'false' }} }">
@@ -123,9 +67,9 @@
                             @include('leads.partials.personal-info-branch', ['lead' => $lead])
 
                             {{-- Listings node --}}
-                            <div class="pl-6 -ml-px border-l-2 border-transparent py-3">
-                                <div class="flex items-start gap-6">
-                                    <button type="button" @click="listingsOpen = !listingsOpen" class="shrink-0 w-36 flex items-center gap-2 text-[12.1px] font-medium" :class="listingsOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
+                            <div class="tree-indent -ml-px border-l-2 border-transparent py-3">
+                                <div class="flex items-start tree-gap">
+                                    <button type="button" @click="listingsOpen = !listingsOpen" class="shrink-0 tree-title flex items-center gap-2 text-[12.1px] font-medium" :class="listingsOpen ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
                                         <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
                                         </svg>
@@ -135,12 +79,12 @@
                                         </svg>
                                     </button>
 
-                                    <div x-show="listingsOpen" class="flex-1 max-w-2xl border-l border-gray-100 pl-6" x-data="{ propertyType: '{{ old('property_type', $lead->property_type) }}' || null }">
+                                    <div x-show="listingsOpen" class="flex-1 max-w-2xl border-l border-gray-100 tree-indent" x-data="{ propertyType: '{{ old('property_type', $lead->property_type) }}' || null }">
                                         <p class="text-[12.1px] text-gray-500 mb-2">{{ match ($lead->type) { 'renter' => __('What are they renting?'), 'seller' => __('What are they selling?'), 'landlord' => __('What are they renting out?'), default => __('What are they buying?') } }}</p>
 
-                                        <div class="flex items-center gap-6">
+                                        <div class="flex items-center tree-gap">
                                             {{-- Property type branch --}}
-                                            <div class="border-l-2 border-gray-200 pl-6">
+                                            <div class="border-l-2 border-gray-200 tree-indent">
                                                 <input type="hidden" form="lead-details-form" name="property_type" :value="propertyType">
                                                 <div class="flex flex-col items-start gap-2">
                                                     <button type="button" @click="propertyType = (propertyType === 'condo' ? null : 'condo')" class="px-3 py-1.5 rounded-full text-[12.1px] font-medium transition" :class="propertyType === 'condo' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ __('Condo') }}</button>
@@ -151,8 +95,8 @@
                                             </div>
 
                                             {{-- Property search branch, only appears once a type is picked, to the right of the type branch --}}
-                                            <div x-show="propertyType" x-transition class="border-l border-gray-100 pl-6">
-                                                <div class="border-l-2 border-gray-200 pl-6 w-64">
+                                            <div x-show="propertyType" x-transition class="border-l border-gray-100 tree-indent">
+                                                <div class="border-l-2 border-gray-200 tree-indent w-64">
                                                     @if ($isOwner)
                                                         <p class="text-[12.1px] font-medium text-gray-700 mb-1">{{ __('Their listings') }}</p>
                                                         @forelse ($lead->ownedListings as $ownedListing)

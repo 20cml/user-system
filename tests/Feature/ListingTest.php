@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Lead;
 use App\Models\Listing;
+use App\Models\ListingNote;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -778,5 +779,79 @@ class ListingTest extends TestCase
 
         $this->assertNull($buyer->fresh());
         $this->assertNull($listing->fresh()->buyer_lead_id);
+    }
+
+    public function test_adding_notes_to_a_listing_shows_them_most_recent_first(): void
+    {
+        $user = User::factory()->create();
+        $listing = Listing::factory()->for($user)->create();
+
+        $this->actingAs($user)->post("/listings/{$listing->id}/notes", ['body' => 'Photographer booked.']);
+        $this->actingAs($user)->post("/listings/{$listing->id}/notes", ['body' => 'Open house on Sunday.']);
+
+        $edit = $this->actingAs($user)->get("/listings/{$listing->id}/edit");
+
+        $edit->assertOk();
+        $edit->assertSeeInOrder(['Open house on Sunday.', 'Photographer booked.']);
+    }
+
+    public function test_empty_listing_note_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        $listing = Listing::factory()->for($user)->create();
+
+        $response = $this->actingAs($user)->post("/listings/{$listing->id}/notes", ['body' => '']);
+
+        $response->assertSessionHasErrors('body');
+        $this->assertDatabaseCount('listing_notes', 0);
+    }
+
+    public function test_agent_can_delete_a_note_from_their_own_listing(): void
+    {
+        $user = User::factory()->create();
+        $listing = Listing::factory()->for($user)->create();
+        $note = ListingNote::factory()->for($listing)->create();
+
+        $response = $this->actingAs($user)->delete("/listings/{$listing->id}/notes/{$note->id}");
+
+        $response->assertRedirect(route('listings.edit', $listing));
+        $this->assertDatabaseMissing('listing_notes', ['id' => $note->id]);
+    }
+
+    public function test_deleting_a_note_that_belongs_to_a_different_listing_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        $listingA = Listing::factory()->for($user)->create();
+        $listingB = Listing::factory()->for($user)->create();
+        $note = ListingNote::factory()->for($listingA)->create();
+
+        $this->actingAs($user)->delete("/listings/{$listingB->id}/notes/{$note->id}")->assertNotFound();
+
+        $this->assertDatabaseHas('listing_notes', ['id' => $note->id]);
+    }
+
+    public function test_an_agent_cannot_add_or_delete_notes_on_another_agents_listing(): void
+    {
+        $agentA = User::factory()->create();
+        $agentB = User::factory()->create();
+        $listing = Listing::factory()->for($agentA)->create();
+        $note = ListingNote::factory()->for($listing)->create();
+
+        $this->actingAs($agentB)->post("/listings/{$listing->id}/notes", ['body' => 'sneaky'])->assertForbidden();
+        $this->actingAs($agentB)->delete("/listings/{$listing->id}/notes/{$note->id}")->assertForbidden();
+
+        $this->assertDatabaseHas('listing_notes', ['id' => $note->id]);
+        $this->assertDatabaseMissing('listing_notes', ['body' => 'sneaky']);
+    }
+
+    public function test_deleting_a_listing_deletes_its_notes(): void
+    {
+        $user = User::factory()->create();
+        $listing = Listing::factory()->for($user)->create();
+        ListingNote::factory()->for($listing)->create();
+
+        $this->actingAs($user)->delete("/listings/{$listing->id}");
+
+        $this->assertDatabaseCount('listing_notes', 0);
     }
 }

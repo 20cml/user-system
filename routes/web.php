@@ -51,6 +51,8 @@ Route::middleware(['auth', 'verified', 'profile.complete', 'no-cache'])->group(f
     Route::get('/listings/{listing}/edit', [ListingController::class, 'edit'])->name('listings.edit');
     Route::patch('/listings/{listing}', [ListingController::class, 'update'])->name('listings.update');
     Route::delete('/listings/{listing}', [ListingController::class, 'destroy'])->name('listings.destroy');
+    Route::post('/listings/{listing}/notes', [ListingController::class, 'storeNote'])->name('listings.notes.store');
+    Route::delete('/listings/{listing}/notes/{note}', [ListingController::class, 'destroyNote'])->name('listings.notes.destroy');
 
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
     Route::post('/leads', [LeadController::class, 'store'])->name('leads.store');
