@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Address\AddressProvider;
+use App\Funnel\Pipelines\PipelineResolver;
 use App\Address\FakeProvider;
 use App\Address\GeoapifyProvider;
 use Illuminate\Support\ServiceProvider;
@@ -14,6 +15,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // One resolver per request, so each agent's pipeline is read once.
+        $this->app->scoped(PipelineResolver::class);
+
         // The active address provider is chosen by configuration
         // (ADDRESS_PROVIDER in .env), never by the code that uses it.
         $this->app->bind(AddressProvider::class, fn () => match (config('services.address.provider')) {

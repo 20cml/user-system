@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Funnel\LeadFunnelService;
 use App\Http\Requests\LeadRequest;
 use App\Models\Lead;
 use App\Models\LeadNote;
@@ -55,11 +56,11 @@ class LeadController extends Controller
     /**
      * Create a new lead owned by the logged-in agent.
      */
-    public function store(LeadRequest $request): RedirectResponse
+    public function store(LeadRequest $request, LeadFunnelService $funnel): RedirectResponse
     {
         $lead = $request->user()->leads()->create([
-            ...$request->safe()->except(['status', 'listing_ids']),
-            'status' => 'new',
+            ...$request->safe()->except(['listing_ids']),
+            'status' => $funnel->initialStatus($request->user()->id, $request->input('type'), $request->input('property_type')),
         ]);
 
         $lead->listings()->sync($request->safe()->input('listing_ids', []));
@@ -89,7 +90,6 @@ class LeadController extends Controller
 
         $lead->update($request->safe()->except(['listing_ids', 'documents']));
         $lead->listings()->sync($request->safe()->input('listing_ids', []));
-        $lead->listings()->get()->each->syncStatusFromLeads();
 
         $lead->updateDocuments($request->input('documents', []));
 

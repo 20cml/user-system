@@ -23,10 +23,6 @@ class ListingController extends Controller
     {
         $listings = $request->user()->listings()->latest();
 
-        if ($request->filled('status')) {
-            $listings->where('status', $request->query('status'));
-        }
-
         if ($request->filled('listing_type')) {
             $listings->where('listing_type', $request->query('listing_type'));
         }
@@ -58,8 +54,7 @@ class ListingController extends Controller
         $user = $request->user();
 
         $listing = $user->listings()->create([
-            ...$request->safe()->except(['photos', 'remove_photos', 'status', 'lead_ids']),
-            'status' => 'available',
+            ...$request->safe()->except(['photos', 'remove_photos', 'lead_ids']),
             'source' => 'manual',
             'currency' => $user->country === 'CA' ? 'CAD' : 'USD',
         ]);

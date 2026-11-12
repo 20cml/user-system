@@ -62,6 +62,30 @@
                         </a>
                     </x-slot>
                 </x-dropdown>
+
+                <x-dropdown align="right" width="w-40" rounded="rounded-2xl" content-classes="bg-white px-2 py-2">
+                    <x-slot name="trigger">
+                        <button type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full font-medium text-[12.1px] leading-none text-gray-800 hover:bg-gray-50">
+                            {{ ['condo' => __('Condo'), 'house' => __('House'), 'land' => __('Land'), 'commercial' => __('Commercial')][$propertyType] }}
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </button>
+                    </x-slot>
+
+                    <x-slot name="content">
+                        @foreach (['condo' => __('Condo'), 'house' => __('House'), 'land' => __('Land'), 'commercial' => __('Commercial')] as $value => $label)
+                            <a href="{{ route('dashboard', ['pipeline' => $pipeline, 'property_type' => $value]) }}" class="flex items-center justify-between px-3 py-2 text-[12.1px] text-gray-900 rounded-lg hover:bg-gray-50">
+                                {{ $label }}
+                                @if ($propertyType === $value)
+                                    <svg class="h-4 w-4 text-gray-700" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                @endif
+                            </a>
+                        @endforeach
+                    </x-slot>
+                </x-dropdown>
             </div>
         </div>
     </x-slot>
@@ -69,6 +93,13 @@
     <div class="pt-6 pb-4 flex-1 flex flex-col min-h-0">
         <div class="px-4 sm:px-6 flex-1 flex flex-col min-h-0">
             <div class="flex gap-4 overflow-x-auto pb-2 flex-1 min-h-0">
+                @if ($stageLabels === [])
+                    <p class="text-[12.1px] text-gray-500">
+                        {{ __('No columns yet.') }}
+                        <a href="{{ route('settings.pipeline', ['type' => $pipeline, 'property_type' => $propertyType]) }}" class="underline hover:text-gray-800">{{ __('Set up this pipeline in Settings') }}</a>
+                    </p>
+                @endif
+
                 @foreach ($stageLabels as $status => $label)
                     <div class="shrink-0 w-72 flex flex-col">
                         <div class="flex items-center gap-2 px-1 mb-2">

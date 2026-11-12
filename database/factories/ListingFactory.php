@@ -26,7 +26,6 @@ class ListingFactory extends Factory
             'source' => 'manual',
             'listing_type' => fake()->randomElement(['sale', 'rent']),
             'property_type' => fake()->randomElement(['house', 'condo', 'land', 'commercial']),
-            'status' => 'available',
             'address_line' => fake()->streetAddress(),
             'city' => fake()->city(),
             'state_province' => fake()->stateAbbr(),

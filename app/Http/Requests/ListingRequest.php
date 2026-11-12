@@ -54,7 +54,6 @@ class ListingRequest extends FormRequest
             'price' => ['nullable', 'numeric', 'gt:0'],
             'listing_type' => [$creating ? 'required' : 'nullable', Rule::in(['sale', 'rent'])],
             'property_type' => [$creating ? 'required' : 'nullable', Rule::in(['house', 'condo', 'land', 'commercial'])],
-            'status' => ['sometimes', Rule::in(['available', 'pending', 'closed'])],
             'area_sqm' => ['nullable', 'numeric'],
             'description' => ['nullable', 'string'],
             'photos' => ['array', 'max:'.Listing::MAX_PHOTOS],

@@ -9,11 +9,20 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\SeedsDefaultFunnel;
 use Tests\TestCase;
 
 class ListingTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsDefaultFunnel;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->setUpSeedsDefaultFunnel();
+    }
 
     /**
      * Valid form data for a listing. The owner is an existing Seller (for a
@@ -52,7 +61,6 @@ class ListingTest extends TestCase
         $this->assertDatabaseHas('listings', [
             'user_id' => $user->id,
             'address_line' => '123 Main St',
-            'status' => 'available',
             'country' => 'CA',
             'currency' => 'CAD',
         ]);
@@ -267,23 +275,6 @@ class ListingTest extends TestCase
         $this->assertDatabaseCount('listings', 0);
     }
 
-    public function test_status_can_move_through_available_pending_and_closed(): void
-    {
-        $user = User::factory()->create();
-        $listing = Listing::factory()->for($user)->create(['status' => 'available']);
-
-        $this->actingAs($user)
-            ->patch("/listings/{$listing->id}", $this->listingData(['status' => 'pending']));
-        $this->assertSame('pending', $listing->fresh()->status);
-
-        $this->actingAs($user)
-            ->patch("/listings/{$listing->id}", $this->listingData(['status' => 'closed']));
-        $this->assertSame('closed', $listing->fresh()->status);
-
-        $index = $this->actingAs($user)->get('/listings');
-        $index->assertSee($listing->fresh()->address_line);
-    }
-
     public function test_an_agent_cannot_see_or_edit_another_agents_listing(): void
     {
         $agentA = User::factory()->create();
@@ -457,18 +448,6 @@ class ListingTest extends TestCase
         $response->assertSee(Storage::url($listing->fresh()->photos->first()->path), false);
     }
 
-    public function test_filtering_by_status_returns_only_matching_listings(): void
-    {
-        $user = User::factory()->create();
-        Listing::factory()->for($user)->create(['status' => 'available', 'address_line' => 'Available One']);
-        Listing::factory()->for($user)->create(['status' => 'closed', 'address_line' => 'Closed One']);
-
-        $response = $this->actingAs($user)->get('/listings?status=closed');
-
-        $response->assertSee('Closed One');
-        $response->assertDontSee('Available One');
-    }
-
     public function test_combining_filters_narrows_to_listings_matching_all_of_them(): void
     {
         $user = User::factory()->create();
@@ -550,40 +529,6 @@ class ListingTest extends TestCase
 
         $response->assertSessionHasErrors('lead_ids.0');
         $this->assertDatabaseCount('listings', 0);
-    }
-
-    public function test_the_closed_leads_chip_is_highlighted_among_a_closed_listings_interested_leads(): void
-    {
-        $user = User::factory()->create();
-        $closingLead = Lead::factory()->for($user)->create(['first_name' => 'Pitu', 'last_name' => '', 'status' => 'closed']);
-        $otherLead = Lead::factory()->for($user)->create(['first_name' => 'Bruno', 'last_name' => '', 'status' => 'new']);
-        $listing = Listing::factory()->for($user)->create(['status' => 'closed']);
-        $listing->leads()->attach([$closingLead->id, $otherLead->id]);
-
-        $this->assertTrue($listing->leadDrivesCurrentStatus($closingLead));
-        $this->assertFalse($listing->leadDrivesCurrentStatus($otherLead));
-    }
-
-    public function test_the_under_contract_leads_chip_is_highlighted_among_a_pending_listings_interested_leads(): void
-    {
-        $user = User::factory()->create();
-        $activeLead = Lead::factory()->for($user)->create(['status' => 'under_contract']);
-        $otherLead = Lead::factory()->for($user)->create(['status' => 'new']);
-        $listing = Listing::factory()->for($user)->create(['status' => 'pending']);
-        $listing->leads()->attach([$activeLead->id, $otherLead->id]);
-
-        $this->assertTrue($listing->leadDrivesCurrentStatus($activeLead));
-        $this->assertFalse($listing->leadDrivesCurrentStatus($otherLead));
-    }
-
-    public function test_no_lead_is_highlighted_on_an_available_listing(): void
-    {
-        $user = User::factory()->create();
-        $lead = Lead::factory()->for($user)->create(['status' => 'new']);
-        $listing = Listing::factory()->for($user)->create(['status' => 'available']);
-        $listing->leads()->attach($lead->id);
-
-        $this->assertFalse($listing->leadDrivesCurrentStatus($lead));
     }
 
     public function test_the_listing_edit_page_shows_the_owners_personal_info_and_documents(): void

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Funnel\LeadFunnelService;
-use App\Funnel\Pipelines\PipelineResolver;
 use Database\Factories\LeadFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -25,7 +24,8 @@ class Lead extends Model
      * The funnel rules (pipelines, stages, document checklists, advancement)
      * live in App\Funnel — this model only exposes them for one lead. See
      * LeadFunnelService, the PipelineStrategy classes, the Stage classes and
-     * the Specification classes.
+     * the Specification classes. The columns and documents are the agent's
+     * own settings (App\Funnel\FunnelConfigurator).
      */
     private function funnel(): LeadFunnelService
     {
@@ -105,6 +105,14 @@ class Lead extends Model
     }
 
     /**
+     * The label of the column this lead is in, or null when it has none.
+     */
+    public function statusLabel(): ?string
+    {
+        return $this->stageLabels()[$this->status] ?? null;
+    }
+
+    /**
      * Every document key this lead's type × property type can have, across
      * all stages.
      *
@@ -112,17 +120,7 @@ class Lead extends Model
      */
     public function documentKeys(): array
     {
-        return $this->funnel()->pipelineFor($this)?->documentKeys($this->property_type) ?? [];
-    }
-
-    /**
-     * Every funnel stage key across all pipelines — for validating a status.
-     *
-     * @return list<string>
-     */
-    public static function allStageKeys(): array
-    {
-        return app(PipelineResolver::class)->allStageKeys();
+        return $this->funnel()->pipelineFor($this)?->documentKeys() ?? [];
     }
 
     /**
@@ -142,50 +140,6 @@ class Lead extends Model
     public function documentChecklistForStage(string $stage): array
     {
         return $this->funnel()->documentChecklistForStage($this, $stage);
-    }
-
-    /**
-     * Whether this lead is ready to advance past its pipeline's listing-
-     * narrowing stage on its documents alone, but is being held back because
-     * it isn't linked to exactly one listing yet.
-     */
-    public function needsListingNarrowed(): bool
-    {
-        return $this->funnel()->needsListingNarrowed($this);
-    }
-
-    /**
-     * The other lead (if any) that already has this lead's single linked
-     * listing under contract — the reason this lead can't advance into
-     * 'under_contract' itself.
-     */
-    public function blockingUnderContractLead(): ?self
-    {
-        return $this->funnel()->blockingUnderContractLead($this);
-    }
-
-    /**
-     * The other lead, if any, currently 'under_contract' on this lead's
-     * single linked listing. Assumes the caller already knows there's
-     * exactly one linked listing.
-     */
-    public function conflictingUnderContractLead(): ?self
-    {
-        $listing = $this->listings()->first();
-
-        return $listing?->leads()
-            ->where('leads.id', '!=', $this->id)
-            ->where('status', 'under_contract')
-            ->first();
-    }
-
-    /**
-     * The stage this lead would actually land on once its listing gets
-     * narrowed to one — not necessarily its narrowing stage itself.
-     */
-    public function targetStageLabelOnceListingNarrowed(): ?string
-    {
-        return $this->funnel()->targetStageLabelOnceListingNarrowed($this);
     }
 
     /**

@@ -23,7 +23,6 @@ class LeadFactory extends Factory
             'last_name' => fake()->lastName(),
             'phone' => fake()->phoneNumber(),
             'email' => fake()->safeEmail(),
-            'status' => 'new',
         ];
     }
 }

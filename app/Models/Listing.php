@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 #[Fillable([
-    'user_id', 'owner_lead_id', 'buyer_lead_id', 'source', 'listing_type', 'property_type', 'status',
+    'user_id', 'owner_lead_id', 'buyer_lead_id', 'source', 'listing_type', 'property_type',
     'address_line', 'city', 'state_province', 'postal_code', 'country',
     'price', 'currency', 'area_sqm', 'description', 'photo_path',
 ])]
@@ -90,42 +90,6 @@ class Listing extends Model
     public function leads(): BelongsToMany
     {
         return $this->belongsToMany(Lead::class, 'lead_listing');
-    }
-
-    /**
-     * Recompute this listing's status from the funnel status of its linked
-     * leads: 'closed' once any linked lead has closed, 'pending' once any
-     * linked lead has completed its 'under_contract' stage, otherwise
-     * 'available'. Always reflects the leads' current statuses — if the
-     * lead that had closed it later regresses (e.g. a document gets
-     * unchecked by mistake), the listing follows it back down.
-     */
-    public function syncStatusFromLeads(): void
-    {
-        $leadStatuses = $this->leads()->pluck('status');
-
-        $this->status = match (true) {
-            $leadStatuses->contains('closed') => 'closed',
-            $leadStatuses->contains('under_contract') => 'pending',
-            default => 'available',
-        };
-
-        $this->save();
-    }
-
-    /**
-     * Whether $lead is the one whose funnel progress is driving this
-     * listing's current status — the lead that closed it, or (while still
-     * pending) the one under contract. Used to highlight which of several
-     * "Interested Leads" is the actual one, without touching the others.
-     */
-    public function leadDrivesCurrentStatus(Lead $lead): bool
-    {
-        return match ($this->status) {
-            'closed' => $lead->status === 'closed',
-            'pending' => $lead->status === 'under_contract',
-            default => false,
-        };
     }
 
     /**

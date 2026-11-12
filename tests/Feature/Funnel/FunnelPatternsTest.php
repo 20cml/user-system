@@ -3,33 +3,39 @@
 namespace Tests\Feature\Funnel;
 
 use App\Funnel\LeadFunnelService;
-use App\Funnel\Pipelines\BuyerPipeline;
-use App\Funnel\Pipelines\LandlordPipeline;
+use App\Funnel\Pipelines\ConfiguredPipeline;
 use App\Funnel\Pipelines\PipelineResolver;
-use App\Funnel\Pipelines\SellerPipeline;
 use App\Funnel\Specifications\DocumentsCompleteSpecification;
-use App\Funnel\Specifications\DocumentsCompleteThroughStageSpecification;
-use App\Funnel\Specifications\HasExactlyOneListingSpecification;
-use App\Funnel\Stages\LostStage;
-use App\Funnel\Stages\UnderContractStage;
+use App\Funnel\Stages\ConfiguredStage;
 use App\Models\Lead;
-use App\Models\Listing;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\SeedsDefaultFunnel;
 use Tests\TestCase;
 
 /**
  * Direct tests of the three patterns behind the funnel: Strategy (pipelines),
- * State (stages) and Specification (rules).
+ * State (stages) and Specification (rules). The agent's columns and documents
+ * come from the database; SeedsDefaultFunnel stands in for an agent who set
+ * up a buyer/seller/renter/landlord funnel.
  */
 class FunnelPatternsTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsDefaultFunnel;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->setUpSeedsDefaultFunnel();
+    }
 
     private function buyer(array $attributes = []): Lead
     {
         return Lead::factory()->create(array_merge([
             'type' => 'buyer',
             'property_type' => 'condo',
+            'status' => 'new',
         ], $attributes));
     }
 
@@ -44,63 +50,64 @@ class FunnelPatternsTest extends TestCase
 
     // ---- Strategy -------------------------------------------------------
 
-    public function test_resolver_picks_the_pipeline_for_each_lead_type(): void
+    public function test_resolver_picks_the_pipeline_of_the_agent_and_lead_type(): void
     {
+        $lead = $this->buyer();
         $resolver = new PipelineResolver;
 
-        $this->assertInstanceOf(BuyerPipeline::class, $resolver->forType('buyer'));
-        $this->assertInstanceOf(SellerPipeline::class, $resolver->forType('seller'));
-        $this->assertInstanceOf(LandlordPipeline::class, $resolver->forType('landlord'));
-        $this->assertNull($resolver->forType('unknown'));
-        $this->assertNull($resolver->forType(null));
+        $this->assertInstanceOf(ConfiguredPipeline::class, $resolver->forType($lead->user_id, 'buyer', 'condo'));
+        $this->assertSame('seller', $resolver->forType($lead->user_id, 'seller', 'house')->type());
+        $this->assertNull($resolver->forType($lead->user_id, 'unknown', 'condo'));
+        $this->assertNull($resolver->forType($lead->user_id, null, 'condo'));
+        $this->assertNull($resolver->forType(null, 'buyer', 'condo'));
+        $this->assertNull($resolver->forType($lead->user_id, 'buyer', null), 'no property type, no funnel');
+        $this->assertNull($resolver->forType($lead->user_id, 'buyer', 'castle'));
     }
 
-    public function test_each_type_has_its_own_stages_and_listing_gate(): void
+    public function test_each_type_has_its_own_stages(): void
     {
+        $userId = $this->buyer()->user_id;
         $resolver = new PipelineResolver;
 
         $this->assertSame(
             ['new', 'contacted', 'qualified', 'property_search', 'showing', 'offer', 'under_contract', 'closed'],
-            $resolver->forType('buyer')->stageKeys(),
+            $resolver->forType($userId, 'buyer', 'condo')->stageKeys(),
         );
         $this->assertSame(
             ['new', 'contacted', 'listed', 'application_received', 'lease', 'rented'],
-            $resolver->forType('landlord')->stageKeys(),
+            $resolver->forType($userId, 'landlord', 'house')->stageKeys(),
         );
-        $this->assertSame('under_contract', $resolver->forType('buyer')->narrowingStageKey());
-        $this->assertNull($resolver->forType('seller')->narrowingStageKey());
+    }
+
+    public function test_a_pipeline_with_no_columns_has_no_stages_and_no_checklist(): void
+    {
+        $nothingSetUp = new ConfiguredPipeline(999999, 'buyer', 'condo');
+
+        $this->assertSame([], $nothingSetUp->stages());
+        $this->assertFalse($nothingSetUp->hasChecklist());
     }
 
     // ---- State ----------------------------------------------------------
 
     public function test_a_stage_knows_the_next_stage_in_its_pipeline(): void
     {
-        $buyer = (new PipelineResolver)->forType('buyer');
+        $buyer = (new PipelineResolver)->forType($this->buyer()->user_id, 'buyer', 'condo');
 
         $this->assertSame('contacted', $buyer->findStage('new')->next($buyer)->key());
         $this->assertSame('closed', $buyer->findStage('under_contract')->next($buyer)->key());
         $this->assertNull($buyer->findStage('closed')->next($buyer));
     }
 
-    public function test_the_current_stage_is_resolved_from_status_and_lost_is_terminal(): void
+    public function test_the_current_stage_is_resolved_from_status(): void
     {
         $service = app(LeadFunnelService::class);
 
-        $this->assertInstanceOf(UnderContractStage::class, $service->stageFor($this->buyer(['status' => 'under_contract'])));
+        $stage = $service->stageFor($this->buyer(['status' => 'under_contract']));
+        $this->assertInstanceOf(ConfiguredStage::class, $stage);
+        $this->assertSame('Under Contract', $stage->label());
 
-        $lost = $service->stageFor($this->buyer(['status' => 'lost']));
-        $this->assertInstanceOf(LostStage::class, $lost);
-        $this->assertFalse($lost->allowsAutomaticAdvance());
-    }
-
-    public function test_a_lost_lead_stays_lost_whatever_its_documents_say(): void
-    {
-        $lead = $this->buyer(['status' => 'lost']);
-        $this->check($lead, 'new');
-
-        $lead->advanceStatusFromDocuments();
-
-        $this->assertSame('lost', $lead->fresh()->status);
+        $this->assertNull($service->stageFor($this->buyer(['status' => 'a_column_that_was_removed'])));
+        $this->assertNull($service->stageFor($this->buyer(['status' => null])));
     }
 
     // ---- Specification --------------------------------------------------
@@ -122,37 +129,22 @@ class FunnelPatternsTest extends TestCase
         $this->assertTrue((new DocumentsCompleteSpecification('showing'))->isSatisfiedBy($this->buyer()));
     }
 
-    public function test_through_stage_specification_needs_every_earlier_stage(): void
-    {
-        $lead = $this->buyer();
-        $spec = new DocumentsCompleteThroughStageSpecification('contacted');
-
-        $this->check($lead, 'contacted');
-        $this->assertFalse($spec->isSatisfiedBy($lead), "'new' is still incomplete");
-
-        $this->check($lead, 'new');
-        $this->assertTrue($spec->isSatisfiedBy($lead));
-    }
-
     public function test_specifications_combine_with_and_and_not(): void
     {
         $lead = $this->buyer();
-        $oneListing = new HasExactlyOneListingSpecification;
         $docsNew = new DocumentsCompleteSpecification('new');
+        $docsContacted = new DocumentsCompleteSpecification('contacted');
 
-        $this->assertFalse($oneListing->isSatisfiedBy($lead));
-        $this->assertTrue($oneListing->not()->isSatisfiedBy($lead));
-
-        $lead->listings()->attach(Listing::factory()->create(['user_id' => $lead->user_id]));
         $this->check($lead, 'new');
 
-        $both = $oneListing->and($docsNew);
-        $this->assertTrue($both->isSatisfiedBy($lead->fresh()));
+        $this->assertTrue($docsNew->isSatisfiedBy($lead));
+        $this->assertFalse($docsNew->and($docsContacted)->isSatisfiedBy($lead));
+        $this->assertTrue($docsNew->and($docsContacted->not())->isSatisfiedBy($lead));
     }
 
     // ---- The funnel service uses them together ---------------------------
 
-    public function test_buyer_advances_through_stages_and_waits_at_the_listing_gate(): void
+    public function test_buyer_advances_through_every_column_once_all_documents_are_checked(): void
     {
         $lead = $this->buyer();
 
@@ -161,13 +153,24 @@ class FunnelPatternsTest extends TestCase
         }
 
         $lead->advanceStatusFromDocuments();
-        $this->assertSame('offer', $lead->fresh()->status, 'no listing linked yet, so it stops before under_contract');
-        $this->assertTrue($lead->fresh()->needsListingNarrowed());
-
-        $lead->listings()->attach(Listing::factory()->create(['user_id' => $lead->user_id]));
-        $lead->unsetRelation('documents');
-        $lead->advanceStatusFromDocuments();
 
         $this->assertSame('under_contract', $lead->fresh()->status);
+
+        $this->check($lead, 'closed');
+        $lead->advanceStatusFromDocuments();
+
+        $this->assertSame('closed', $lead->fresh()->status);
+    }
+
+    public function test_a_lead_with_no_columns_has_no_status(): void
+    {
+        $lead = Lead::factory()->create(['type' => 'buyer', 'status' => 'new']);
+        \App\Models\PipelineStage::where('user_id', $lead->user_id)->delete();
+        app(PipelineResolver::class)->flush();
+
+        $lead->advanceStatusFromDocuments();
+
+        $this->assertNull($lead->fresh()->status);
+        $this->assertNull($lead->fresh()->statusLabel());
     }
 }

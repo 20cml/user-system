@@ -28,14 +28,14 @@
                     @foreach ($docStages as $stageKey)
                         @php $stageLabel = $docStageLabels[$stageKey] ?? ucfirst($stageKey); @endphp
                         <div class="py-2">
-                            <button type="button" @click="docStage.{{ $stageKey }} = !docStage.{{ $stageKey }}" class="w-full flex items-center gap-2 text-[12.1px] font-medium" :class="docStage.{{ $stageKey }} ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
+                            <button type="button" @click="docStage['{{ $stageKey }}'] = !docStage['{{ $stageKey }}']" class="w-full flex items-center gap-2 text-[12.1px] font-medium" :class="docStage['{{ $stageKey }}'] ? 'text-gray-900' : 'text-gray-600 hover:text-gray-900'">
                                 {{ $stageLabel }}
-                                <svg class="h-3 w-3 transition-transform" :class="docStage.{{ $stageKey }} ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <svg class="h-3 w-3 transition-transform" :class="docStage['{{ $stageKey }}'] ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                                 </svg>
                             </button>
 
-                            <div x-show="docStage.{{ $stageKey }}" class="mt-2 border-l border-gray-100 pl-4 space-y-2">
+                            <div x-show="docStage['{{ $stageKey }}']" class="mt-2 border-l border-gray-100 pl-4 space-y-2">
                                 @php $stageDocuments = $lead->documentChecklistForStage($stageKey); @endphp
                                 @forelse ($stageDocuments as $key => $doc)
                                     <label class="flex items-center gap-2 text-[12.1px] text-gray-700">

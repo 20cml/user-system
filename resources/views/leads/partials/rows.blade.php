@@ -14,7 +14,7 @@
         <td class="px-6 py-2 text-[12.1px] text-gray-700 truncate">{{ $lead->email }}</td>
         <td class="px-6 py-2">
             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-normal bg-gray-100 text-gray-700">
-                {{ ucfirst($lead->status) }}
+                {{ $lead->statusLabel() ?? '—' }}
             </span>
         </td>
     </tr>

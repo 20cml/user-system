@@ -6,7 +6,7 @@
             </h2>
 
             <div class="relative -top-2.5 mr-2 flex items-center gap-2">
-                <x-dropdown align="right" width="w-64" rounded="rounded-2xl" content-classes="bg-white px-4 py-3" :close-on-click="false" :initial-open="request()->hasAny(['status', 'listing_type', 'property_type', 'min_price', 'max_price'])">
+                <x-dropdown align="right" width="w-64" rounded="rounded-2xl" content-classes="bg-white px-4 py-3" :close-on-click="false" :initial-open="request()->hasAny(['listing_type', 'property_type', 'min_price', 'max_price'])">
                     <x-slot name="trigger">
                         <button type="button"
                                 class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-700 border border-gray-400 text-gray-400 hover:bg-gray-600"
@@ -20,16 +20,6 @@
 
                     <x-slot name="content">
                         <form method="get" action="{{ route('listings.index') }}" class="space-y-3">
-                            <div>
-                                <label for="filter_status" class="block pb-1 text-xs font-medium text-gray-400">{{ __('Status') }}</label>
-                                <select id="filter_status" name="status" onchange="this.form.submit()" class="field-slim block border-gray-300 focus:border-gray-400 focus:ring-0 rounded-md text-[13px]">
-                                    <option value="">{{ __('Any') }}</option>
-                                    <option value="available" @selected(request('status') === 'available')>{{ __('Available') }}</option>
-                                    <option value="pending" @selected(request('status') === 'pending')>{{ __('Pending') }}</option>
-                                    <option value="closed" @selected(request('status') === 'closed')>{{ __('Closed') }}</option>
-                                </select>
-                            </div>
-
                             <div>
                                 <label for="filter_listing_type" class="block pb-1 text-xs font-medium text-gray-400">{{ __('Listing type') }}</label>
                                 <select id="filter_listing_type" name="listing_type" onchange="this.form.submit()" class="field-slim block border-gray-300 focus:border-gray-400 focus:ring-0 rounded-md text-[13px]">
@@ -67,7 +57,7 @@
                                 </div>
                             </div>
 
-                            @if (request()->hasAny(['status', 'listing_type', 'property_type', 'min_price', 'max_price']))
+                            @if (request()->hasAny(['listing_type', 'property_type', 'min_price', 'max_price']))
                                 <a href="{{ route('listings.index') }}" class="block text-center text-xs text-gray-500 underline hover:text-gray-700">{{ __('Clear filters') }}</a>
                             @endif
                         </form>
@@ -119,7 +109,6 @@
                     <div class="p-4 space-y-1">
                         <div class="flex items-center justify-between">
                             <span class="font-semibold text-gray-900">{{ $listing->price !== null ? "{$listing->currency} " . number_format($listing->price, 2) : __('Price not set') }}</span>
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-normal bg-gray-100 text-gray-700">{{ ucfirst($listing->status) }}</span>
                         </div>
                         <p class="text-sm text-gray-700">{{ $listing->title() }}</p>
                         <p class="text-xs text-gray-500">{{ $listing->listing_type ? ucfirst($listing->listing_type) : __('Not set') }} &middot; {{ $listing->property_type ? ucfirst($listing->property_type) : __('Not set') }}</p>

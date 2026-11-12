@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Lead;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -38,10 +37,6 @@ class LeadRequest extends FormRequest
             'email' => ['nullable', 'string', 'email', 'max:255'],
             'type' => $typeRules,
             'property_type' => ['nullable', Rule::in(['condo', 'house', 'land', 'commercial'])],
-            'status' => ['sometimes', Rule::in([
-                ...Lead::allStageKeys(),
-                'lost',
-            ])],
             'listing_ids' => ['array'],
             'listing_ids.*' => [Rule::exists('listings', 'id')->where('user_id', $this->user()->id)],
             'documents' => ['array'],

@@ -13,11 +13,8 @@
                     @php
                         $listingTypeOptions = ['' => __('Not set'), 'sale' => __('For sale'), 'rent' => __('For rent')];
                         $propertyTypeOptions = ['' => __('Not set'), 'house' => __('House'), 'condo' => __('Condo'), 'land' => __('Land'), 'commercial' => __('Commercial')];
-                        $listingStatusOptions = ['available' => __('Available'), 'pending' => __('Pending'), 'closed' => __('Closed')];
                         $owner = $listing->owner;
-                        $ownerStatusOptions = $owner ? $owner->stageLabels() + ['lost' => __('Lost')] : [];
                         $buyer = $listing->buyer;
-                        $buyerStatusOptions = $buyer ? $buyer->stageLabels() + ['lost' => __('Lost')] : [];
                     @endphp
                     <div
                         :class="(ownerProfileOpen || buyerProfileOpen) ? 'max-w-6xl' : (detailsOpen ? 'max-w-3xl' : 'max-w-xl')"
@@ -151,7 +148,6 @@
                                         'selected' => $listing->leads->map(fn ($lead) => [
                                             'id' => $lead->id,
                                             'label' => $lead->name,
-                                            'variant' => $listing->leadDrivesCurrentStatus($lead) ? 'success' : null,
                                         ]),
                                     ])
                                     <x-input-error class="mt-2" :messages="$errors->get('lead_ids')" />
@@ -159,8 +155,6 @@
                                     <x-save-button form="listing-form">{{ __('Save') }}</x-save-button>
                                 </div>
                             </div>
-
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-medium bg-gray-700 text-white">{{ $listingStatusOptions[$listing->status] ?? ucfirst($listing->status) }}</span>
                         </div>
                         <x-input-error class="mb-2" :messages="$errors->get('price')" />
                         <x-input-error class="mb-2" :messages="$errors->get('listing_type')" />
@@ -242,7 +236,7 @@
                                                                 </button>
 
                                                                 <div x-show="statusOpen" class="flex-1 border-l border-gray-100 tree-indent">
-                                                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-medium bg-gray-700 text-white">{{ $ownerStatusOptions[$owner->status] ?? ucfirst($owner->status) }}</span>
+                                                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-medium bg-gray-700 text-white">{{ $owner->statusLabel() ?? __('No column yet') }}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -302,7 +296,7 @@
                                                                 </button>
 
                                                                 <div x-show="buyerStatusOpen" class="flex-1 border-l border-gray-100 tree-indent">
-                                                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-medium bg-gray-700 text-white">{{ $buyerStatusOptions[$buyer->status] ?? ucfirst($buyer->status) }}</span>
+                                                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-medium bg-gray-700 text-white">{{ $buyer->statusLabel() ?? __('No column yet') }}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -401,7 +395,7 @@
 
             // form.submit() called via JS doesn't fire the form's native 'submit'
             // event, so a plain submit listener alone won't catch it. The root
-            // dropdowns (listing type, property type, status) all auto-save by
+            // dropdowns (listing type, property type) all auto-save by
             // calling form.submit() directly — overriding the method itself is
             // the only way to guarantee the price field is cleaned up no matter
             // which trigger fires the submit.

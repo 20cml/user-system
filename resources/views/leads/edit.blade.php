@@ -15,7 +15,7 @@
                     </x-side-tab>
                 </div>
 
-                <div :class="(personalOpen || listingsOpen || documentsOpen) ? 'max-w-3xl' : 'max-w-sm'" class="transition-[max-width] duration-300" x-data="{ personalOpen: {{ in_array('personal', (array) request('open', [])) ? 'true' : 'false' }}, listingsOpen: {{ (in_array('listings', (array) request('open', [])) || $lead->needsListingNarrowed() || $lead->blockingUnderContractLead()) ? 'true' : 'false' }}, documentsOpen: {{ in_array('documents', (array) request('open', [])) ? 'true' : 'false' }} }">
+                <div :class="(personalOpen || listingsOpen || documentsOpen) ? 'max-w-3xl' : 'max-w-sm'" class="transition-[max-width] duration-300" x-data="{ personalOpen: {{ in_array('personal', (array) request('open', [])) ? 'true' : 'false' }}, listingsOpen: {{ (in_array('listings', (array) request('open', []))) ? 'true' : 'false' }}, documentsOpen: {{ in_array('documents', (array) request('open', [])) ? 'true' : 'false' }} }">
 
                     {{-- root node: type/status --}}
                     <div class="flex items-center justify-start gap-4 pb-4 mb-4 border-b border-gray-200">
@@ -23,7 +23,6 @@
                             $typeLabels = ['' => __('Not set'), 'buyer' => __('Buyer'), 'renter' => __('Renter'), 'seller' => __('Seller'), 'landlord' => __('Landlord')];
                             // A Seller/Landlord owns listings; only Buyer/Renter have "interested" listings.
                             $isOwner = in_array($lead->type, ['seller', 'landlord'], true);
-                            $statusOptions = $lead->stageLabels() + ['lost' => __('Lost')];
                         @endphp
                         <div class="flex items-center gap-4 shrink-0">
                             <div
@@ -50,7 +49,7 @@
                                 </div>
                             </div>
 
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-medium bg-gray-700 text-white">{{ $statusOptions[$lead->status] ?? ucfirst($lead->status) }}</span>
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12.1px] font-medium bg-gray-700 text-white">{{ $lead->statusLabel() ?? __('No column yet') }}</span>
                         </div>
                     </div>
                     <x-input-error class="mb-2" :messages="$errors->get('type')" />
@@ -170,45 +169,4 @@
             </div>
         </div>
 
-        <x-modal name="narrow-listing-warning" :show="$lead->needsListingNarrowed()" focusable>
-            <div class="p-6">
-                @php $targetStageLabel = $lead->targetStageLabelOnceListingNarrowed(); @endphp
-                <h2 class="text-sm font-medium text-gray-900">
-                    {{ __('This lead needs one listing') }}
-                </h2>
-
-                <p class="mt-2 text-[12.1px] text-gray-600">
-                    @if ($lead->listings->isEmpty())
-                        {{ __('This lead is ready to move to :stage — link the listing it\'s for.', ['stage' => $targetStageLabel]) }}
-                    @else
-                        {{ __('This lead has :count listings linked — remove all but the one it\'s for to move it to :stage.', ['count' => $lead->listings->count(), 'stage' => $targetStageLabel]) }}
-                    @endif
-                </p>
-
-                <div class="mt-6 flex justify-end">
-                    <x-save-button x-on:click="$dispatch('close')">
-                        {{ __('Got it') }}
-                    </x-save-button>
-                </div>
-            </div>
-        </x-modal>
-
-        <x-modal name="under-contract-conflict-warning" :show="(bool) $lead->blockingUnderContractLead()" focusable>
-            <div class="p-6">
-                @php $blockingLead = $lead->blockingUnderContractLead(); @endphp
-                <h2 class="text-sm font-medium text-gray-900">
-                    {{ __('This listing is already under contract') }}
-                </h2>
-
-                <p class="mt-2 text-[12.1px] text-gray-600">
-                    {{ __(':blockingLead already has this listing under contract — resolve that before :lead can move there too.', ['blockingLead' => $blockingLead?->name, 'lead' => $lead->name]) }}
-                </p>
-
-                <div class="mt-6 flex justify-end">
-                    <x-save-button x-on:click="$dispatch('close')">
-                        {{ __('Got it') }}
-                    </x-save-button>
-                </div>
-            </div>
-        </x-modal>
 </x-app-layout>

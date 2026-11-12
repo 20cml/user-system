@@ -5,9 +5,10 @@ namespace App\Funnel\Pipelines;
 use App\Funnel\Stages\Stage;
 
 /**
- * STRATEGY pattern: each lead type (buyer, seller, renter, landlord) follows
- * its own pipeline. The funnel picks the right one from the lead's type, so
- * adding a new lead type is one new class and no change to existing ones.
+ * STRATEGY pattern: each lead type (buyer, seller, renter, landlord) and
+ * property type follows its own pipeline. The funnel picks the right one for
+ * the agent and the lead, so the funnel code never knows which columns or documents
+ * exist — those are the agent's settings.
  */
 interface PipelineStrategy
 {
@@ -33,23 +34,17 @@ interface PipelineStrategy
     public function stageAfter(string $key): ?Stage;
 
     /**
-     * The stage at which a lead must be narrowed to exactly one linked
-     * listing, or null if this pipeline has no such gate.
+     * Whether any document is required at all.
      */
-    public function narrowingStageKey(): ?string;
-
-    /**
-     * Whether any document checklist is defined for this property type.
-     */
-    public function hasChecklist(?string $propertyType): bool;
+    public function hasChecklist(): bool;
 
     /**
      * @return array<string, string> document key => label required at $stageKey
      */
-    public function documentsFor(?string $propertyType, string $stageKey): array;
+    public function documentsFor(string $stageKey): array;
 
     /**
      * @return list<string> every document key across all stages
      */
-    public function documentKeys(?string $propertyType): array;
+    public function documentKeys(): array;
 }

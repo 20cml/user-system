@@ -5,6 +5,7 @@ namespace Tests\Feature\Funnel;
 use App\Models\Lead;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\SeedsDefaultFunnel;
 use Tests\TestCase;
 
 /**
@@ -15,6 +16,14 @@ use Tests\TestCase;
 class LeadFunnelCommandTest extends TestCase
 {
     use RefreshDatabase;
+    use SeedsDefaultFunnel;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->setUpSeedsDefaultFunnel();
+    }
 
     private const NEW_DOCS = ['reco_information_guide', 'id_client_verification'];
 
@@ -22,7 +31,7 @@ class LeadFunnelCommandTest extends TestCase
 
     private function buyer(): Lead
     {
-        return Lead::factory()->create(['type' => 'buyer', 'property_type' => 'condo']);
+        return Lead::factory()->create(['type' => 'buyer', 'property_type' => 'condo', 'status' => 'new']);
     }
 
     public function test_it_shows_the_current_stage_and_the_next_one(): void
@@ -56,16 +65,6 @@ class LeadFunnelCommandTest extends TestCase
 
         $this->artisan('lead:funnel', ['lead' => $lead->id, '--uncheck' => ['id_client_verification']]);
         $this->assertSame('new', $lead->fresh()->status);
-    }
-
-    public function test_a_lost_lead_is_not_moved_by_documents(): void
-    {
-        $lead = $this->buyer();
-
-        $this->artisan('lead:funnel', ['lead' => $lead->id, '--lost' => true]);
-        $this->artisan('lead:funnel', ['lead' => $lead->id, '--check' => self::NEW_DOCS]);
-
-        $this->assertSame('lost', $lead->fresh()->status);
     }
 
     public function test_it_rejects_an_unknown_document_key_without_changing_anything(): void
